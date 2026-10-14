@@ -56,10 +56,10 @@ function finishStyle(name) {
   playerName = name || playerSpec.name;
   ui.setNameTag(playerName);
   ui.hidePicker();
-  ui.showToast(`Hi, ${playerName}! 💖`);
+  ui.showToast(`Hi, ${playerName}! 💖 Let's go exploring!`);
 }
 
-const ui = createUI({ onChoose: turnInto, onColor: recolor, onDone: finishStyle });
+const ui = createUI({ onChoose: turnInto, onColor: recolor, onDone: finishStyle, onHop: () => hop() });
 
 function resize() {
   const w = window.innerWidth;
@@ -70,6 +70,112 @@ function resize() {
 }
 window.addEventListener("resize", resize);
 resize();
+
+// ---------- walking ----------
+
+const WALK_SPEED = 4.5;
+const keys = new Set();
+let walkTarget = null;
+let walkAmount = 0; // 0 = standing still, 1 = walking (smoothed for animation)
+let hopY = 0;
+let hopSpeed = 0;
+
+window.addEventListener("keydown", (event) => {
+  if (event.target.tagName === "INPUT") return;
+  const key = event.key.toLowerCase();
+  keys.add(key);
+  if (key === " ") hop();
+  if (key === " " || key.startsWith("arrow")) event.preventDefault();
+});
+window.addEventListener("keyup", (event) => keys.delete(event.key.toLowerCase()));
+window.addEventListener("blur", () => keys.clear());
+
+// Tap or click the ground to walk there; hold and drag to steer.
+const raycaster = new THREE.Raycaster();
+const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+const pointer = new THREE.Vector2();
+let pointerHeld = false;
+
+function setWalkTarget(event) {
+  pointer.set((event.clientX / window.innerWidth) * 2 - 1, -(event.clientY / window.innerHeight) * 2 + 1);
+  raycaster.setFromCamera(pointer, camera);
+  const hit = new THREE.Vector3();
+  if (raycaster.ray.intersectPlane(groundPlane, hit)) walkTarget = hit;
+}
+canvas.addEventListener("pointerdown", (event) => {
+  if (!player || ui.isPickerOpen()) return;
+  pointerHeld = true;
+  setWalkTarget(event);
+});
+canvas.addEventListener("pointermove", (event) => {
+  if (pointerHeld) setWalkTarget(event);
+});
+window.addEventListener("pointerup", () => (pointerHeld = false));
+
+function hop() {
+  if (player && !ui.isPickerOpen() && hopY === 0) hopSpeed = 7;
+}
+
+function blocked(x, z) {
+  const limit = world.half - 1;
+  if (Math.abs(x) > limit || Math.abs(z) > limit) return true;
+  return world.colliders.some((c) => Math.hypot(c.x - x, c.z - z) < c.r + 0.5);
+}
+
+const move = new THREE.Vector3();
+function updatePlayer(dt) {
+  move.set(0, 0, 0);
+  if (!ui.isPickerOpen()) {
+    if (keys.has("arrowup") || keys.has("w")) move.z -= 1;
+    if (keys.has("arrowdown") || keys.has("s")) move.z += 1;
+    if (keys.has("arrowleft") || keys.has("a")) move.x -= 1;
+    if (keys.has("arrowright") || keys.has("d")) move.x += 1;
+  }
+  if (move.lengthSq() > 0) {
+    walkTarget = null;
+  } else if (walkTarget) {
+    move.set(walkTarget.x - player.position.x, 0, walkTarget.z - player.position.z);
+    if (move.length() < 0.2) {
+      walkTarget = null;
+      move.set(0, 0, 0);
+    }
+  }
+
+  const moving = move.lengthSq() > 0;
+  if (moving) {
+    move.normalize().multiplyScalar(WALK_SPEED * dt);
+    const p = player.position;
+    const startX = p.x;
+    const startZ = p.z;
+    // Try each direction on its own so you slide along trees and fences.
+    if (!blocked(p.x + move.x, p.z)) p.x += move.x;
+    if (!blocked(p.x, p.z + move.z)) p.z += move.z;
+    if (walkTarget && Math.hypot(p.x - startX, p.z - startZ) < 0.001) walkTarget = null; // stuck
+
+    // Turn smoothly to face where we're going.
+    const facing = Math.atan2(move.x, move.z);
+    const turn = Math.atan2(Math.sin(facing - player.rotation.y), Math.cos(facing - player.rotation.y));
+    player.rotation.y += turn * Math.min(1, dt * 12);
+  }
+  walkAmount += ((moving ? 1 : 0) - walkAmount) * Math.min(1, dt * 8);
+
+  // Hopping.
+  if (hopSpeed !== 0 || hopY > 0) {
+    hopY += hopSpeed * dt;
+    hopSpeed -= 20 * dt;
+    if (hopY <= 0) {
+      hopY = 0;
+      hopSpeed = 0;
+    }
+  }
+
+  // Wade a little lower in the pond.
+  const groundY = inPond(player.position.x, player.position.z) ? -0.35 : 0;
+  player.userData.groundY = (player.userData.groundY ?? groundY) + (groundY - (player.userData.groundY ?? groundY)) * Math.min(1, dt * 8);
+  player.position.y = player.userData.groundY + hopY;
+}
+
+// ---------- game loop ----------
 
 const clock = new THREE.Clock();
 const camGoal = new THREE.Vector3();
@@ -83,7 +189,9 @@ function loop() {
   effects.update(dt);
 
   if (player) {
-    animateAnimal(player, t, 0);
+    updatePlayer(dt);
+    animateAnimal(player, t, walkAmount);
+    world.fadeTrees(player.position, camera.position);
     const h = player.userData.height;
     camGoal.set(player.position.x, player.position.y + 3 + h, player.position.z + 6 + h * 1.5);
     camera.position.lerp(camGoal, 0.05);

@@ -160,3 +160,32 @@ button, input { font: inherit; color: inherit; }
   white-space: nowrap;
   pointer-events: none;
 }
+
+.hint {
+  position: fixed;
+  left: 50%;
+  bottom: 16px;
+  transform: translateX(-50%);
+  max-width: calc(100vw - 120px);
+  padding: 6px 14px;
+  background: rgba(255, 255, 255, 0.85);
+  border-radius: 12px;
+  font-size: 14px;
+  text-align: center;
+  pointer-events: none;
+}
+
+.hop-button {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  width: 64px;
+  height: 64px;
+  font-size: 28px;
+  background: #ffca28;
+  border: none;
+  border-radius: 50%;
+  box-shadow: 0 4px 0 #c79a00;
+  cursor: pointer;
+}
+.hop-button:active { transform: translateY(2px); box-shadow: 0 2px 0 #c79a00; }

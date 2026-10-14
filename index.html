@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Animal Adoption Game</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
   <canvas id="game"></canvas>
@@ -40,13 +40,18 @@
 
   <button id="change-animal" class="corner-button" hidden>🔮 Change animal</button>
   <div id="name-tag" class="name-tag" hidden></div>
+
+  <div id="play-controls" hidden>
+    <div class="hint">Walk: arrow keys / WASD, or tap the ground · Hop: Space</div>
+    <button id="hop-button" class="hop-button" aria-label="Hop">⤴️</button>
+  </div>
   <div id="toast" class="toast"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
-  <script src="js/world.js"></script>
-  <script src="js/animals.js"></script>
-  <script src="js/effects.js"></script>
-  <script src="js/ui.js"></script>
-  <script src="js/main.js"></script>
+  <script src="js/world.js?v=4"></script>
+  <script src="js/animals.js?v=4"></script>
+  <script src="js/effects.js?v=4"></script>
+  <script src="js/ui.js?v=4"></script>
+  <script src="js/main.js?v=4"></script>
 </body>
 </html>

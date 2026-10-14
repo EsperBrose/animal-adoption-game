@@ -61,6 +61,7 @@ function buildWorld(scene) {
   const rand = seededRandom(42);
   const half = WORLD_SIZE / 2;
   const colliders = [];
+  const trees = [];
 
   // Ground tiles: one instanced mesh, each tile gets its own color.
   const ground = new THREE.InstancedMesh(
@@ -105,7 +106,9 @@ function buildWorld(scene) {
     if (Math.abs(x) < 5 && z > 0 && z < POND.rz + 14) continue; // keep the start area clear
 
     if (colliders.some((c) => Math.hypot(c.x - x, c.z - z) < 3)) continue;
-    scene.add(makeTree(x, z, rand));
+    const tree = makeTree(x, z, rand);
+    scene.add(tree);
+    trees.push(tree);
     colliders.push({ x, z, r: 0.9 });
     placed++;
   }
@@ -165,5 +168,20 @@ function buildWorld(scene) {
     }
   }
 
-  return { update, colliders, half };
+  // Trees standing between the camera and the player turn see-through.
+  function fadeTrees(playerPos, cameraPos) {
+    for (const tree of trees) {
+      const p = tree.position;
+      const inTheWay = p.z > playerPos.z + 0.3 && p.z < cameraPos.z + 1.5 && Math.abs(p.x - playerPos.x) < 2.4;
+      const goal = inTheWay ? 0.25 : 1;
+      for (const mesh of tree.children) {
+        const m = mesh.material;
+        m.opacity += (goal - m.opacity) * 0.15;
+        m.transparent = m.opacity < 0.98;
+        mesh.castShadow = !m.transparent;
+      }
+    }
+  }
+
+  return { update, fadeTrees, colliders, half };
 }
