@@ -10,7 +10,7 @@ turn into any animal you want, then win over a family in town so they adopt you.
 
 ## Phase 2 — Become an animal
 - [x] Boxy 3D world: grass tiles, magic pond, trees, flowers, fence
-- [ ] Animal picker (dog, cat, bunny, fox, horse, dragon…) plus a "type any animal" box
+- [x] Animal picker (dog, cat, bunny, fox, horse, dragon…) plus a "type any animal" box
 - [ ] Choose your animal's name and color
 - [ ] Walk your animal around with arrow keys / WASD or by tapping
 

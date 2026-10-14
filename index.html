@@ -10,8 +10,24 @@
   <canvas id="game"></canvas>
   <h1 class="title">🐾 Animal Adoption Game</h1>
 
+  <div id="picker" class="panel">
+    <h2>✨ The Magic Pond ✨</h2>
+    <p>Step into the pond and turn into any animal you want!</p>
+    <div id="animal-grid" class="grid"></div>
+    <form id="any-animal" class="row">
+      <input id="any-animal-input" placeholder="Or type any animal…" maxlength="24" autocomplete="off">
+      <button type="submit" class="big-button">Turn into it!</button>
+    </form>
+  </div>
+
+  <button id="change-animal" class="corner-button" hidden>🔮 Change animal</button>
+  <div id="toast" class="toast"></div>
+
   <script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
   <script src="js/world.js"></script>
+  <script src="js/animals.js"></script>
+  <script src="js/effects.js"></script>
+  <script src="js/ui.js"></script>
   <script src="js/main.js"></script>
 </body>
 </html>
