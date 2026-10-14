@@ -13,7 +13,7 @@ const NAME_IDEAS = [
 
 const hexToCss = (hex) => "#" + hex.toString(16).padStart(6, "0");
 
-function createUI({ onChoose, onColor, onDone }) {
+function createUI({ onChoose, onColor, onDone, onHop }) {
   const picker = document.getElementById("picker");
   const stepAnimal = document.getElementById("step-animal");
   const stepStyle = document.getElementById("step-style");
@@ -28,6 +28,10 @@ function createUI({ onChoose, onColor, onDone }) {
   const changeButton = document.getElementById("change-animal");
   const nameTag = document.getElementById("name-tag");
   const toast = document.getElementById("toast");
+  const playControls = document.getElementById("play-controls");
+  const hopButton = document.getElementById("hop-button");
+
+  hopButton.addEventListener("click", onHop);
 
   for (const [key, animal] of Object.entries(ANIMALS)) {
     const button = document.createElement("button");
@@ -57,11 +61,13 @@ function createUI({ onChoose, onColor, onDone }) {
     stepAnimal.hidden = false;
     stepStyle.hidden = true;
     changeButton.hidden = true;
+    playControls.hidden = true;
   }
 
   function hidePicker() {
     picker.hidden = true;
     changeButton.hidden = false;
+    playControls.hidden = false;
   }
 
   // Step 2: name and color. The animal's own color is offered first.
@@ -106,5 +112,7 @@ function createUI({ onChoose, onColor, onDone }) {
     toastTimer = setTimeout(() => toast.classList.remove("show"), 2500);
   }
 
-  return { showPicker, hidePicker, showStyleStep, setNameTag, moveNameTag, showToast };
+  const isPickerOpen = () => !picker.hidden;
+
+  return { showPicker, hidePicker, isPickerOpen, showStyleStep, setNameTag, moveNameTag, showToast };
 }
