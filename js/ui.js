@@ -1,11 +1,32 @@
-// The on-screen menus: the animal picker, the "change animal" button and messages.
+// The on-screen menus: the animal picker, the name & color step,
+// the "change animal" button, the floating name tag and messages.
 
-function createUI({ onChoose }) {
+const COLOR_CHOICES = [
+  0xffffff, 0x222222, 0x8b5a2b, 0xc68642, 0xff7f27, 0xf4c542, 0xffb6c1,
+  0xe53935, 0x8bc34a, 0x26a69a, 0x42a5f5, 0x7e57c2, 0xce93d8, 0x9e9e9e,
+];
+
+const NAME_IDEAS = [
+  "Biscuit", "Pepper", "Sunny", "Pickles", "Mochi", "Ziggy", "Clover", "Noodle",
+  "Waffles", "Luna", "Bean", "Sprinkles", "Peanut", "Comet", "Maple", "Bubbles",
+];
+
+const hexToCss = (hex) => "#" + hex.toString(16).padStart(6, "0");
+
+function createUI({ onChoose, onColor, onDone }) {
   const picker = document.getElementById("picker");
+  const stepAnimal = document.getElementById("step-animal");
+  const stepStyle = document.getElementById("step-style");
   const grid = document.getElementById("animal-grid");
   const form = document.getElementById("any-animal");
   const input = document.getElementById("any-animal-input");
+  const styleTitle = document.getElementById("style-title");
+  const nameInput = document.getElementById("name-input");
+  const swatches = document.getElementById("swatches");
+  const styleForm = stepStyle;
+  const backButton = document.getElementById("back-button");
   const changeButton = document.getElementById("change-animal");
+  const nameTag = document.getElementById("name-tag");
   const toast = document.getElementById("toast");
 
   for (const [key, animal] of Object.entries(ANIMALS)) {
@@ -23,16 +44,58 @@ function createUI({ onChoose }) {
     input.value = "";
   });
 
+  styleForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    onDone(nameInput.value.trim());
+  });
+
+  backButton.addEventListener("click", showPicker);
   changeButton.addEventListener("click", showPicker);
 
   function showPicker() {
     picker.hidden = false;
+    stepAnimal.hidden = false;
+    stepStyle.hidden = true;
     changeButton.hidden = true;
   }
 
   function hidePicker() {
     picker.hidden = true;
     changeButton.hidden = false;
+  }
+
+  // Step 2: name and color. The animal's own color is offered first.
+  function showStyleStep(spec, currentName) {
+    picker.hidden = false;
+    stepAnimal.hidden = true;
+    stepStyle.hidden = false;
+    styleTitle.textContent = `${spec.emoji} Your ${spec.name}`;
+    nameInput.value = currentName || NAME_IDEAS[Math.floor(Math.random() * NAME_IDEAS.length)];
+
+    swatches.innerHTML = "";
+    const choices = [spec.color, ...COLOR_CHOICES.filter((c) => c !== spec.color)];
+    choices.forEach((color, i) => {
+      const swatch = document.createElement("button");
+      swatch.type = "button";
+      swatch.className = "swatch" + (i === 0 ? " selected" : "");
+      swatch.style.background = hexToCss(color);
+      swatch.title = i === 0 ? "Original color" : "";
+      swatch.addEventListener("click", () => {
+        swatches.querySelectorAll(".swatch").forEach((s) => s.classList.remove("selected"));
+        swatch.classList.add("selected");
+        onColor(color);
+      });
+      swatches.appendChild(swatch);
+    });
+  }
+
+  function setNameTag(name) {
+    nameTag.textContent = name;
+    nameTag.hidden = !name;
+  }
+
+  function moveNameTag(x, y) {
+    nameTag.style.transform = `translate(${x}px, ${y}px) translate(-50%, -100%)`;
   }
 
   let toastTimer;
@@ -43,5 +106,5 @@ function createUI({ onChoose }) {
     toastTimer = setTimeout(() => toast.classList.remove("show"), 2500);
   }
 
-  return { showPicker, hidePicker, showToast };
+  return { showPicker, hidePicker, showStyleStep, setNameTag, moveNameTag, showToast };
 }

@@ -102,6 +102,8 @@ function buildWorld(scene) {
     const x = Math.round((rand() - 0.5) * (WORLD_SIZE - 4));
     const z = Math.round((rand() - 0.5) * (WORLD_SIZE - 4));
     if (inPond(x, z, 4)) continue;
+    if (Math.abs(x) < 5 && z > 0 && z < POND.rz + 14) continue; // keep the start area clear
+
     if (colliders.some((c) => Math.hypot(c.x - x, c.z - z) < 3)) continue;
     scene.add(makeTree(x, z, rand));
     colliders.push({ x, z, r: 0.9 });
