@@ -24,10 +24,12 @@ const world = buildWorld(scene);
 const effects = createEffects(scene);
 
 let player = null;
+let playerSpec = null;
+let playerName = "";
 const START = new THREE.Vector3(0, 0, POND.rz + 2.5);
 
-function turnInto(text) {
-  const spec = findAnimal(text);
+// Swap the player's model, keeping where it stands and which way it faces.
+function placeAnimal(spec) {
   const position = player ? player.position.clone() : START.clone();
   const heading = player ? player.rotation.y : 0;
   if (player) scene.remove(player);
@@ -35,12 +37,29 @@ function turnInto(text) {
   player.position.copy(position);
   player.rotation.y = heading;
   scene.add(player);
-  effects.poof(position);
-  ui.showToast(`${spec.emoji} You turned into ${/^[aeiou]/i.test(spec.name) ? "an" : "a"} ${spec.name}!`);
-  ui.hidePicker();
 }
 
-const ui = createUI({ onChoose: turnInto });
+function turnInto(text) {
+  playerSpec = findAnimal(text);
+  placeAnimal(playerSpec);
+  effects.poof(player.position);
+  ui.showToast(`${playerSpec.emoji} You turned into ${/^[aeiou]/i.test(playerSpec.name) ? "an" : "a"} ${playerSpec.name}!`);
+  ui.showStyleStep(playerSpec, playerName);
+}
+
+function recolor(color) {
+  playerSpec = { ...playerSpec, color };
+  placeAnimal(playerSpec);
+}
+
+function finishStyle(name) {
+  playerName = name || playerSpec.name;
+  ui.setNameTag(playerName);
+  ui.hidePicker();
+  ui.showToast(`Hi, ${playerName}! 💖`);
+}
+
+const ui = createUI({ onChoose: turnInto, onColor: recolor, onDone: finishStyle });
 
 function resize() {
   const w = window.innerWidth;
@@ -55,6 +74,7 @@ resize();
 const clock = new THREE.Clock();
 const camGoal = new THREE.Vector3();
 const lookAt = new THREE.Vector3();
+const tagPoint = new THREE.Vector3();
 let t = 0;
 function loop() {
   const dt = Math.min(clock.getDelta(), 0.1);
@@ -69,6 +89,10 @@ function loop() {
     camera.position.lerp(camGoal, 0.05);
     lookAt.set(player.position.x, player.position.y + h * 0.5, player.position.z);
     camera.lookAt(lookAt);
+
+    // Keep the name tag floating above the animal's head.
+    tagPoint.set(player.position.x, player.position.y + h + 0.4, player.position.z).project(camera);
+    ui.moveNameTag((tagPoint.x + 1) / 2 * window.innerWidth, (1 - tagPoint.y) / 2 * window.innerHeight);
   } else {
     // Slowly circle the magic pond while choosing.
     const a = t * 0.1;

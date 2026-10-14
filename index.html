@@ -11,16 +11,35 @@
   <h1 class="title">🐾 Animal Adoption Game</h1>
 
   <div id="picker" class="panel">
-    <h2>✨ The Magic Pond ✨</h2>
-    <p>Step into the pond and turn into any animal you want!</p>
-    <div id="animal-grid" class="grid"></div>
-    <form id="any-animal" class="row">
-      <input id="any-animal-input" placeholder="Or type any animal…" maxlength="24" autocomplete="off">
-      <button type="submit" class="big-button">Turn into it!</button>
+    <div id="step-animal">
+      <h2>✨ The Magic Pond ✨</h2>
+      <p>Step into the pond and turn into any animal you want!</p>
+      <div id="animal-grid" class="grid"></div>
+      <form id="any-animal" class="row">
+        <input id="any-animal-input" placeholder="Or type any animal…" maxlength="24" autocomplete="off">
+        <button type="submit" class="big-button">Turn into it!</button>
+      </form>
+    </div>
+
+    <form id="step-style" hidden>
+      <h2 id="style-title">Your animal</h2>
+      <label class="field">
+        <span>Name</span>
+        <input id="name-input" maxlength="16" autocomplete="off">
+      </label>
+      <div class="field">
+        <span>Color</span>
+        <div id="swatches" class="swatches"></div>
+      </div>
+      <div class="row">
+        <button type="button" id="back-button" class="plain-button">← Pick another animal</button>
+        <button type="submit" class="big-button">Done! 🐾</button>
+      </div>
     </form>
   </div>
 
   <button id="change-animal" class="corner-button" hidden>🔮 Change animal</button>
+  <div id="name-tag" class="name-tag" hidden></div>
   <div id="toast" class="toast"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
