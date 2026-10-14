@@ -6,7 +6,7 @@ then win over a family in town so they adopt you. Hosted on GitHub Pages.
 ## Phase 1 — Setup
 - [x] Create GitHub repo with `PLAN.md` and README
 - [x] Starter game page (`index.html`) with a canvas and the magic pond
-- [ ] GitHub Pages turned on so the game has a playable link
+- [x] GitHub Pages turned on so the game has a playable link
 
 ## Phase 2 — Become an animal
 - [ ] Animal picker (dog, cat, bunny, fox, horse, dragon…) plus a "type any animal" box
