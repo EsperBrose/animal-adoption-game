@@ -128,10 +128,75 @@ const ui = createUI({
   onHumanChange: previewHuman,
   onHumanDone: finishHuman,
   onHumanCancel: cancelHuman,
+  onAction: doAction,
 });
 
 const town = createFamilies(scene, world);
-for (const family of town.families) family.label = ui.makeLabel(`The ${family.name} family`, "family-label");
+for (const family of town.families) {
+  family.label = ui.makeLabel(`The ${family.name} family`, "family-label");
+  family.bubble = ui.makeLabel("", "speech");
+  family.bubbleTime = 0;
+}
+
+// ---------- making families happy ----------
+
+const ACTION_COOLDOWN = 1.2;
+let actionCooldown = 0;
+let trickSpin = 0; // seconds of spinning left
+let cardKey = ""; // which family card is showing, so we only rebuild it when it changes
+
+function say(family, text) {
+  family.bubble.textContent = text;
+  family.bubble.hidden = false;
+  family.bubbleTime = 2.5;
+}
+
+function doAction(action) {
+  const family = town.meeting();
+  if (!family || isHuman || actionCooldown > 0 || !player) return;
+  actionCooldown = ACTION_COOLDOWN;
+  ui.setActionsEnabled(false);
+
+  const leaderPos = family.leader.position;
+  if (action === "trick") {
+    trickSpin = 0.6;
+    hop();
+  } else if (action === "cuddle") {
+    // Snuggle up close to the family, then hearts!
+    const away = Math.hypot(leaderPos.x - player.position.x, leaderPos.z - player.position.z);
+    const close = Math.max(0, away - 1.2 - (player.userData.radius ?? 0.5));
+    player.position.x += ((leaderPos.x - player.position.x) / away) * close;
+    player.position.z += ((leaderPos.z - player.position.z) / away) * close;
+    effects.hearts(player.position, 6);
+  } else if (action === "play") {
+    effects.ball(player.position, leaderPos);
+    hop();
+  }
+
+  const { line } = reactToAction(family, action, playerSpec);
+  say(family, line);
+  effects.hearts(leaderPos, action === family.loves ? 12 : 5);
+  ui.setHearts(family.hearts);
+}
+
+function updateFamilyCard(dt) {
+  if (actionCooldown > 0) {
+    actionCooldown -= dt;
+    if (actionCooldown <= 0) ui.setActionsEnabled(true);
+  }
+  const family = player && !ui.isPickerOpen() ? town.meeting() : null;
+  const key = family ? `${family.name}|${isHuman}` : "";
+  if (key !== cardKey) {
+    cardKey = key;
+    if (family) {
+      ui.showFamilyCard(family, isHuman);
+      ui.setActionsEnabled(actionCooldown <= 0);
+      if (!isHuman && family.hearts === 0) say(family, "Hello there, cutie!");
+    } else {
+      ui.hideFamilyCard();
+    }
+  }
+}
 
 function resize() {
   const w = window.innerWidth;
@@ -157,6 +222,8 @@ window.addEventListener("keydown", (event) => {
   const key = event.key.toLowerCase();
   keys.add(key);
   if (key === " ") hop();
+  const action = { 1: "trick", 2: "cuddle", 3: "play" }[key];
+  if (action) doAction(action);
   if (key === " " || key.startsWith("arrow")) event.preventDefault();
 });
 window.addEventListener("keyup", (event) => keys.delete(event.key.toLowerCase()));
@@ -276,6 +343,12 @@ function frame() {
 
   if (player) {
     updatePlayer(dt);
+    if (trickSpin > 0) {
+      // A full spin in 0.6 seconds.
+      const step = Math.min(trickSpin, dt);
+      player.rotation.y += (step / 0.6) * Math.PI * 2;
+      trickSpin -= step;
+    }
     if (player.userData.arms) animatePerson(player, t, walkAmount); // people have arms, animals don't
     else animateAnimal(player, t, walkAmount);
     world.fadeTrees(player.position, camera.position);
@@ -305,7 +378,13 @@ function frame() {
       Math.hypot(player.position.x - leader.position.x, player.position.z - leader.position.z) < 14;
     family.label.hidden = !near;
     if (near) placeLabel(family.label, leader.position.x, leader.userData.height + 0.6, leader.position.z);
+    if (family.bubbleTime > 0) {
+      family.bubbleTime -= dt;
+      family.bubble.hidden = family.bubbleTime <= 0 || !near;
+      placeLabel(family.bubble, leader.position.x, leader.userData.height + 1.5, leader.position.z);
+    }
   }
+  updateFamilyCard(dt);
 
   renderer.render(scene, camera);
 }
@@ -335,7 +414,7 @@ if (new URLSearchParams(location.search).has("debug")) {
     const round = (n) => Math.round(n * 10) / 10;
     status.textContent = JSON.stringify({
       player: player && { x: round(player.position.x), z: round(player.position.z), human: isHuman },
-      families: town.families.map((f) => ({ name: f.name, state: f.state, x: round(f.leader.position.x), z: round(f.leader.position.z) })),
+      families: town.families.map((f) => ({ name: f.name, state: f.state, hearts: f.hearts, x: round(f.leader.position.x), z: round(f.leader.position.z) })),
     });
   }, 100);
 }

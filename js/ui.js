@@ -21,6 +21,7 @@ const hexToCss = (hex) => "#" + hex.toString(16).padStart(6, "0");
 function createUI({
   onChoose, onColor, onAge, onDone, onHop,
   onToggleForm, onEditHuman, onHumanChange, onHumanDone, onHumanCancel,
+  onAction,
 }) {
   const picker = document.getElementById("picker");
   const stepAnimal = document.getElementById("step-animal");
@@ -218,10 +219,54 @@ function createUI({
     editHuman.hidden = !isHuman;
   }
 
+  // ---------- family card (heart meter) ----------
+
+  const familyCard = document.getElementById("family-card");
+  const familyActions = document.getElementById("family-actions");
+  const hint = playControls.querySelector(".hint");
+
+  function showFamilyCard(family, isHuman) {
+    document.getElementById("family-title").textContent = `🏠 The ${family.name} family`;
+    document.getElementById("family-hint").textContent = isHuman
+      ? "👋 They say hi! Turn into an animal so they can adopt you."
+      : `They love ${ACTIONS[family.loves].word} the most!`;
+    familyActions.innerHTML = "";
+    if (!isHuman) {
+      Object.entries(ACTIONS).forEach(([action, info], i) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "big-button action-button";
+        button.textContent = info.label;
+        button.title = `Key ${i + 1}`;
+        button.addEventListener("click", () => onAction(action));
+        familyActions.appendChild(button);
+      });
+    }
+    setHearts(family.hearts);
+    familyCard.hidden = false;
+    hint.hidden = true;
+  }
+
+  function hideFamilyCard() {
+    familyCard.hidden = true;
+    hint.hidden = false;
+  }
+
+  function setHearts(hearts) {
+    document.getElementById("hearts-fill").style.width = `${(hearts / MAX_HEARTS) * 100}%`;
+    document.getElementById("hearts-text").textContent =
+      hearts >= MAX_HEARTS ? "💖 Full of love!" : `❤️ ${hearts} / ${MAX_HEARTS}`;
+  }
+
+  function setActionsEnabled(enabled) {
+    familyActions.querySelectorAll("button").forEach((b) => (b.disabled = !enabled));
+  }
+
   const isPickerOpen = () => !picker.hidden || !humanPanel.hidden;
 
   return {
     showPicker, hidePicker, isPickerOpen, showStyleStep, setNameTag, nameTag, makeLabel, showToast,
     showHumanPanel, setForm,
+    showFamilyCard, hideFamilyCard, setHearts, setActionsEnabled,
   };
 }
