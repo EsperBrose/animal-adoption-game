@@ -13,7 +13,10 @@ const NAME_IDEAS = [
 
 const hexToCss = (hex) => "#" + hex.toString(16).padStart(6, "0");
 
-function createUI({ onChoose, onColor, onDone, onHop }) {
+function createUI({
+  onChoose, onColor, onDone, onHop,
+  onToggleForm, onEditHuman, onHumanChange, onHumanDone, onHumanCancel,
+}) {
   const picker = document.getElementById("picker");
   const stepAnimal = document.getElementById("step-animal");
   const stepStyle = document.getElementById("step-style");
@@ -62,12 +65,15 @@ function createUI({ onChoose, onColor, onDone, onHop }) {
     stepStyle.hidden = true;
     changeButton.hidden = true;
     playControls.hidden = true;
+    formToggle.hidden = true;
+    editHuman.hidden = true;
   }
 
   function hidePicker() {
     picker.hidden = true;
     changeButton.hidden = false;
     playControls.hidden = false;
+    formToggle.hidden = false;
   }
 
   // Step 2: name and color. The animal's own color is offered first.
@@ -118,7 +124,98 @@ function createUI({ onChoose, onColor, onDone, onHop }) {
     toastTimer = setTimeout(() => toast.classList.remove("show"), 2500);
   }
 
-  const isPickerOpen = () => !picker.hidden;
+  // ---------- human mode ----------
 
-  return { showPicker, hidePicker, isPickerOpen, showStyleStep, setNameTag, nameTag, makeLabel, showToast };
+  const humanPanel = document.getElementById("human-panel");
+  const formToggle = document.getElementById("form-toggle");
+  const editHuman = document.getElementById("edit-human");
+  formToggle.addEventListener("click", onToggleForm);
+  editHuman.addEventListener("click", onEditHuman);
+  document.getElementById("human-done").addEventListener("click", () => {
+    hideHumanPanel();
+    onHumanDone();
+  });
+  document.getElementById("human-cancel").addEventListener("click", () => {
+    hideHumanPanel();
+    onHumanCancel();
+  });
+
+  // Fill a row with buttons; clicking one marks it selected and calls pick(value).
+  function choiceRow(container, items, selected, pick, makeButton) {
+    container.innerHTML = "";
+    for (const item of items) {
+      const button = makeButton(item);
+      button.type = "button";
+      if (item.value === selected) button.classList.add("selected");
+      button.addEventListener("click", () => {
+        container.querySelectorAll("button").forEach((b) => b.classList.remove("selected"));
+        button.classList.add("selected");
+        pick(item.value);
+      });
+      container.appendChild(button);
+    }
+  }
+
+  const colorItems = (colors) => colors.map((c) => ({ value: c }));
+  function swatchButton(item) {
+    const button = document.createElement("button");
+    button.className = "swatch";
+    button.style.background = hexToCss(item.value);
+    return button;
+  }
+  function textButton(item) {
+    const button = document.createElement("button");
+    button.className = "choice";
+    button.textContent = item.label;
+    return button;
+  }
+
+  // Show the setup panel for a look; every change calls onHumanChange with the new look.
+  function showHumanPanel(look) {
+    const current = { ...look };
+    const change = (key) => (value) => {
+      current[key] = value;
+      if (key === "gender") {
+        current.hairStyle = HUMAN_DEFAULT_HAIR[value];
+        fillHairStyles();
+      }
+      onHumanChange({ ...current });
+    };
+    const fillHairStyles = () =>
+      choiceRow(document.getElementById("hairstyle-choices"), HAIR_STYLES, current.hairStyle, change("hairStyle"), textButton);
+
+    choiceRow(document.getElementById("gender-choices"), GENDERS, current.gender, change("gender"), textButton);
+    choiceRow(document.getElementById("skin-swatches"), colorItems(SKIN_TONES), current.skin, change("skin"), swatchButton);
+    fillHairStyles();
+    choiceRow(document.getElementById("hair-swatches"), colorItems(HAIR_COLORS), current.hair, change("hair"), swatchButton);
+    choiceRow(document.getElementById("shirt-swatches"), colorItems(SHIRT_COLORS), current.shirt, change("shirt"), swatchButton);
+    choiceRow(document.getElementById("pants-swatches"), colorItems(PANTS_COLORS), current.pants, change("pants"), swatchButton);
+
+    picker.hidden = true;
+    humanPanel.hidden = false;
+    changeButton.hidden = true;
+    playControls.hidden = true;
+    formToggle.hidden = true;
+    editHuman.hidden = true;
+  }
+
+  function hideHumanPanel() {
+    humanPanel.hidden = true;
+    changeButton.hidden = false;
+    playControls.hidden = false;
+    formToggle.hidden = false;
+  }
+
+  // The toggle shows what you'll turn INTO when you press it.
+  function setForm(isHuman) {
+    formToggle.textContent = isHuman ? "🐾 Animal" : "🧍 Human";
+    editHuman.hidden = !isHuman;
+  }
+
+  const isPickerOpen = () => !picker.hidden || !humanPanel.hidden;
+
+  return {
+    showPicker, hidePicker, isPickerOpen, showStyleStep, setNameTag, nameTag, makeLabel, showToast,
+    showHumanPanel, setForm,
+  };
 }

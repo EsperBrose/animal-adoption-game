@@ -24,23 +24,29 @@ const world = buildWorld(scene);
 const effects = createEffects(scene);
 
 let player = null;
-let playerSpec = null;
+let playerSpec = null; // the animal you are (or were, while human)
+let humanLook = null; // set the first time you make your human
+let isHuman = false;
 let playerName = "";
 const START = new THREE.Vector3(0, 0, POND.rz + 2.5);
 
 // Swap the player's model, keeping where it stands and which way it faces.
-function placeAnimal(spec) {
+function placePlayer(model) {
   const position = player ? player.position.clone() : START.clone();
   const heading = player ? player.rotation.y : 0;
   if (player) scene.remove(player);
-  player = buildAnimal(spec);
+  player = model;
   player.position.copy(position);
   player.rotation.y = heading;
   scene.add(player);
 }
 
+const placeAnimal = (spec) => placePlayer(buildAnimal(spec));
+const placeHuman = (look) => placePlayer(buildPerson({ ...look, kid: true }));
+
 function turnInto(text) {
   playerSpec = findAnimal(text);
+  isHuman = false;
   placeAnimal(playerSpec);
   effects.poof(player.position);
   ui.showToast(`${playerSpec.emoji} You turned into ${/^[aeiou]/i.test(playerSpec.name) ? "an" : "a"} ${playerSpec.name}!`);
@@ -56,10 +62,67 @@ function finishStyle(name) {
   playerName = name || playerSpec.name;
   ui.setNameTag(playerName);
   ui.hidePicker();
+  ui.setForm(isHuman);
   ui.showToast(`Hi, ${playerName}! 💖 Let's go exploring!`);
 }
 
-const ui = createUI({ onChoose: turnInto, onColor: recolor, onDone: finishStyle, onHop: () => hop() });
+// One click: animal → human → animal. The first time, you design your human.
+function toggleForm() {
+  if (!humanLook) return editHuman();
+  isHuman = !isHuman;
+  if (isHuman) placeHuman(humanLook);
+  else placeAnimal(playerSpec);
+  effects.poof(player.position);
+  ui.setForm(isHuman);
+  ui.showToast(isHuman ? "🧍 You turned into a human!" : `${playerSpec.emoji} You're ${/^[aeiou]/i.test(playerSpec.name) ? "an" : "a"} ${playerSpec.name} again!`);
+}
+
+let lookBeforeEdit = null;
+function editHuman() {
+  lookBeforeEdit = isHuman ? humanLook : null;
+  const look = humanLook ?? DEFAULT_HUMAN;
+  placeHuman(look); // live preview while choosing
+  ui.showHumanPanel(look);
+  pendingLook = look;
+}
+
+let pendingLook = null;
+function previewHuman(look) {
+  pendingLook = look;
+  placeHuman(look);
+}
+
+function finishHuman() {
+  const firstTime = !humanLook;
+  humanLook = pendingLook;
+  isHuman = true;
+  placeHuman(humanLook);
+  effects.poof(player.position);
+  ui.setForm(true);
+  if (firstTime) ui.showToast("🧍 You're a human! Press 🐾 Animal to change back.");
+}
+
+function cancelHuman() {
+  // Go back to whatever you were before opening the panel.
+  if (lookBeforeEdit) placeHuman(lookBeforeEdit);
+  else {
+    isHuman = false;
+    placeAnimal(playerSpec);
+  }
+  ui.setForm(isHuman);
+}
+
+const ui = createUI({
+  onChoose: turnInto,
+  onColor: recolor,
+  onDone: finishStyle,
+  onHop: () => hop(),
+  onToggleForm: toggleForm,
+  onEditHuman: editHuman,
+  onHumanChange: previewHuman,
+  onHumanDone: finishHuman,
+  onHumanCancel: cancelHuman,
+});
 
 const town = createFamilies(scene, world);
 for (const family of town.families) family.label = ui.makeLabel(`The ${family.name} family`, "family-label");
@@ -191,7 +254,9 @@ function placeLabel(label, x, y, z) {
   const sy = ((1 - screenPoint.y) / 2) * window.innerHeight;
   label.style.transform = `translate(${sx}px, ${sy}px) translate(-50%, -100%)`;
 }
-function loop() {
+let lastFrame = 0;
+function frame() {
+  lastFrame = performance.now();
   const dt = Math.min(clock.getDelta(), 0.1);
   t += dt;
   world.update(t);
@@ -199,7 +264,8 @@ function loop() {
 
   if (player) {
     updatePlayer(dt);
-    animateAnimal(player, t, walkAmount);
+    if (player.userData.arms) animatePerson(player, t, walkAmount); // people have arms, animals don't
+    else animateAnimal(player, t, walkAmount);
     world.fadeTrees(player.position, camera.position);
     // The sun follows the player so shadows work all over the big map.
     sun.position.set(player.position.x + 15, 25, player.position.z + 10);
@@ -229,6 +295,34 @@ function loop() {
   }
 
   renderer.render(scene, camera);
+}
+
+function loop() {
+  frame();
   requestAnimationFrame(loop);
 }
 loop();
+
+// ---------- test helpers ----------
+// Open the game with ?debug to let testing tools see and move things.
+// Status is written as JSON into a hidden #debug element; setting its
+// data-teleport="x,z" attribute moves the player there.
+if (new URLSearchParams(location.search).has("debug")) {
+  const status = document.createElement("pre");
+  status.id = "debug";
+  status.hidden = true;
+  document.body.appendChild(status);
+  new MutationObserver(() => {
+    const [x, z] = (status.dataset.teleport || "").split(",").map(Number);
+    if (player && Number.isFinite(x) && Number.isFinite(z)) player.position.set(x, 0, z);
+  }).observe(status, { attributes: true, attributeFilter: ["data-teleport"] });
+  setInterval(() => {
+    // Keep the game running even when the browser isn't drawing frames.
+    if (performance.now() - lastFrame > 200) frame();
+    const round = (n) => Math.round(n * 10) / 10;
+    status.textContent = JSON.stringify({
+      player: player && { x: round(player.position.x), z: round(player.position.z), human: isHuman },
+      families: town.families.map((f) => ({ name: f.name, state: f.state, x: round(f.leader.position.x), z: round(f.leader.position.z) })),
+    });
+  }, 100);
+}
