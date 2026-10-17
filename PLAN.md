@@ -18,7 +18,7 @@ Hosted on GitHub Pages.
 ## Phase 3 — Get adopted
 - [x] More land, plus a town with houses, and families who walk around, stop and wave
 - [x] Human mode: one button turns you into a human and back; choose girl / boy / other, skin, hair and clothes
-- [ ] A forest in the south: pine trees, mushrooms, rocks and darker grass
+- [x] A forest in the south: pine trees, mushrooms, rocks and darker grass
 - [ ] Real-life sizes (elephants and giraffes are huge, tiny animals stay visible), and choose to be a baby or an adult animal
 - [ ] Do tricks, cuddle, or play to fill a family's ❤️ meter
 - [ ] Full meter → they adopt you → "Adopted!" celebration, and your family follows you

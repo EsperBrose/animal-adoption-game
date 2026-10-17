@@ -89,6 +89,52 @@ function makeTree(x, z, rand) {
   return tree;
 }
 
+// ---------- the forest (south part of the land) ----------
+
+const FOREST_Z = 22;
+const isForest = (x, z) => z > FOREST_Z;
+const isTrail = (x, z) => Math.abs(x - Math.sin(z * 0.15) * 3) < 1.1 && z > FOREST_Z - 4;
+
+function makePine(x, z, rand) {
+  const tree = new THREE.Group();
+  const green = [0x2e7d32, 0x1b5e20, 0x388e3c][Math.floor(rand() * 3)];
+  const tall = 0.8 + rand() * 0.5;
+  const trunk = makeBox(0.5, 1.2, 0.5, 0x6d4c41);
+  trunk.position.y = 0.6;
+  tree.add(trunk);
+  [[2.4, 1.6], [1.8, 2.4], [1.2, 3.2], [0.6, 3.9]].forEach(([w, y]) => {
+    const layer = makeBox(w, 0.8, w, green);
+    layer.position.y = y;
+    tree.add(layer);
+  });
+  tree.scale.set(1, tall, 1);
+  tree.position.set(x, 0, z);
+  tree.rotation.y = Math.floor(rand() * 4) * (Math.PI / 2);
+  return tree;
+}
+
+function makeMushroom(x, z, rand) {
+  const mushroom = new THREE.Group();
+  const big = 0.7 + rand() * 0.8;
+  const stem = makeBox(0.14, 0.3, 0.14, 0xfff8e1);
+  stem.position.y = 0.15;
+  const cap = makeBox(0.42, 0.16, 0.42, rand() < 0.7 ? 0xe53935 : 0xa1887f);
+  cap.position.y = 0.36;
+  const spot = makeBox(0.1, 0.03, 0.1, 0xffffff);
+  spot.position.set(0.08, 0.45, 0.05);
+  mushroom.add(stem, cap, spot);
+  mushroom.scale.setScalar(big);
+  mushroom.position.set(x, 0, z);
+  return mushroom;
+}
+
+function makeRock(x, z, size, rand) {
+  const rock = makeBox(size, size * (0.5 + rand() * 0.4), size * (0.7 + rand() * 0.5), rand() < 0.5 ? 0x9e9e9e : 0x8d8d8d);
+  rock.position.set(x, rock.geometry.parameters.height / 2, z);
+  rock.rotation.y = rand() * Math.PI;
+  return rock;
+}
+
 function makeFlower(x, z, rand) {
   const flower = new THREE.Group();
   const stem = makeBox(0.08, 0.35, 0.08, 0x2e7d32);
@@ -143,6 +189,10 @@ function buildWorld(scene) {
         hex = 0xf2d98d; // sandy shore
       } else if (isPath(x, z)) {
         hex = rand() < 0.5 ? 0xd7ccc8 : 0xcfc2bd;
+      } else if (isTrail(x, z)) {
+        hex = rand() < 0.5 ? 0xa1887f : 0x8d6e63; // dirt trail into the forest
+      } else if (isForest(x, z)) {
+        hex = [0x4e8f3a, 0x467f34, 0x55993f][Math.floor(rand() * 3)];
       } else {
         hex = grass[Math.floor(rand() * grass.length)];
       }
@@ -164,13 +214,49 @@ function buildWorld(scene) {
     return { group, x: hx, z: TOWN.houseZ, doorX: hx, doorZ: TOWN.houseZ + 3 };
   });
 
-  // Trees, kept away from the pond, the town and the start area.
+  // The forest: lots of pine trees, with a dirt trail winding through.
+  const edge = half - 2;
+  for (let tries = 0, pines = 0; pines < 200 && tries < 5000; tries++) {
+    const x = (rand() - 0.5) * 2 * edge;
+    const z = FOREST_Z + 1 + rand() * (edge - FOREST_Z - 1);
+    if (isTrail(x, z)) continue;
+    if (colliders.some((c) => c.r && Math.hypot(c.x - x, c.z - z) < 2.5)) continue;
+    const pine = makePine(x, z, rand);
+    scene.add(pine);
+    trees.push(pine);
+    colliders.push({ x, z, r: 0.7 });
+    pines++;
+  }
+  for (let m = 0; m < 70; m++) {
+    const x = (rand() - 0.5) * 2 * edge;
+    const z = FOREST_Z + rand() * (edge - FOREST_Z);
+    if (!isBlocked(x, z, 0.3)) scene.add(makeMushroom(x, z, rand));
+  }
+  for (let r = 0; r < 35; r++) {
+    const x = (rand() - 0.5) * 2 * edge;
+    const z = FOREST_Z - 6 + rand() * (edge - FOREST_Z + 6);
+    const size = 0.4 + rand() * 1.4;
+    if (isTrail(x, z) || isBlocked(x, z, size)) continue;
+    scene.add(makeRock(x, z, size, rand));
+    if (size > 0.9) colliders.push({ x, z, r: size * 0.5 });
+  }
+  for (let l = 0; l < 8; l++) {
+    const x = (rand() - 0.5) * 2 * (edge - 3);
+    const z = FOREST_Z + 2 + rand() * (edge - FOREST_Z - 4);
+    if (isTrail(x, z) || isBlocked(x, z, 1.8)) continue;
+    const log = makeBox(3, 0.6, 0.6, 0x795548);
+    log.position.set(x, 0.3, z);
+    scene.add(log);
+    colliders.push({ x, z, hw: 1.5, hd: 0.3 });
+  }
+
+  // Trees, kept away from the pond, the town, the forest and the start area.
   let placed = 0;
   while (placed < 130) {
     const x = Math.round((rand() - 0.5) * (WORLD_SIZE - 4));
     const z = Math.round((rand() - 0.5) * (WORLD_SIZE - 4));
     if (inPond(x, z, 4)) continue;
-    if (z < TOWN.edgeZ || isPath(x, z)) continue;
+    if (z < TOWN.edgeZ || isPath(x, z) || isForest(x, z) || isTrail(x, z)) continue;
     if (Math.abs(x) < 5 && z > 0 && z < POND.rz + 14) continue; // keep the start area clear
 
     if (colliders.some((c) => c.r && Math.hypot(c.x - x, c.z - z) < 3)) continue;
@@ -185,7 +271,7 @@ function buildWorld(scene) {
   for (let f = 0; f < 380; f++) {
     const x = (rand() - 0.5) * (WORLD_SIZE - 3);
     const z = (rand() - 0.5) * (WORLD_SIZE - 3);
-    if (inPond(x, z, 2) || isPath(x, z) || isBlocked(x, z, 0.3)) continue;
+    if (inPond(x, z, 2) || isPath(x, z) || isForest(x, z) || isTrail(x, z) || isBlocked(x, z, 0.3)) continue;
     scene.add(makeFlower(x, z, rand));
   }
 
@@ -241,13 +327,16 @@ function buildWorld(scene) {
     for (const tree of trees) {
       const p = tree.position;
       const inTheWay = p.z > playerPos.z + 0.3 && p.z < cameraPos.z + 1.5 && Math.abs(p.x - playerPos.x) < (tree.userData.wide ? 3.5 : 2.4);
+      if (!inTheWay && !tree.userData.faded) continue; // most trees: nothing to do
       const goal = inTheWay ? 0.25 : 1;
       for (const mesh of tree.children) {
         const m = mesh.material;
         m.opacity += (goal - m.opacity) * 0.15;
-        m.transparent = m.opacity < 0.98;
+        if (!inTheWay && m.opacity > 0.98) m.opacity = 1;
+        m.transparent = m.opacity < 1;
         mesh.castShadow = !m.transparent;
       }
+      tree.userData.faded = tree.children[0].material.opacity < 1;
     }
   }
 
