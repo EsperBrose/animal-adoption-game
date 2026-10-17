@@ -15,7 +15,7 @@ turn into any animal you want, then win over a family in town so they adopt you.
 - [x] Walk your animal around with arrow keys / WASD or by tapping
 
 ## Phase 3 — Get adopted
-- [ ] Families walk around the town
+- [x] Families walk around the town (houses, road, boxy people who stop and wave)
 - [ ] Do tricks, cuddle, or play to fill a family's ❤️ meter
 - [ ] Full meter → they adopt you → "Adopted!" celebration
 
