@@ -100,8 +100,14 @@ function createUI({ onChoose, onColor, onDone, onHop }) {
     nameTag.hidden = !name;
   }
 
-  function moveNameTag(x, y) {
-    nameTag.style.transform = `translate(${x}px, ${y}px) translate(-50%, -100%)`;
+  // A floating label that main.js keeps above something in the 3D world.
+  function makeLabel(text, className) {
+    const label = document.createElement("div");
+    label.className = className;
+    label.textContent = text;
+    label.hidden = true;
+    document.body.appendChild(label);
+    return label;
   }
 
   let toastTimer;
@@ -114,5 +120,5 @@ function createUI({ onChoose, onColor, onDone, onHop }) {
 
   const isPickerOpen = () => !picker.hidden;
 
-  return { showPicker, hidePicker, isPickerOpen, showStyleStep, setNameTag, moveNameTag, showToast };
+  return { showPicker, hidePicker, isPickerOpen, showStyleStep, setNameTag, nameTag, makeLabel, showToast };
 }

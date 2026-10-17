@@ -1,7 +1,52 @@
 // The boxy 3D world: grass tiles, the magic pond, trees, flowers and a fence.
 
-const WORLD_SIZE = 40;
+const WORLD_SIZE = 56;
 const POND = { rx: 6.5, rz: 4.5 };
+
+// The town is north of the pond: a road with a row of houses behind it.
+const TOWN = {
+  roadZ: -15,
+  houseZ: -21,
+  houseXs: [-18, -6, 6, 18],
+  edgeZ: -11, // everything north of this is town (no trees)
+};
+
+function isPath(x, z) {
+  const half = WORLD_SIZE / 2;
+  if (Math.abs(z - TOWN.roadZ) < 1.5 && Math.abs(x) < half - 1) return true; // main road
+  if (Math.abs(x) < 1.2 && z > TOWN.roadZ && z < -POND.rz - 1) return true; // pond to town
+  return TOWN.houseXs.some((hx) => Math.abs(x - hx) < 0.8 && z < TOWN.roadZ && z > TOWN.houseZ + 2); // front paths
+}
+
+function makeHouse(x, z, wallColor, roofColor) {
+  const house = new THREE.Group();
+  const walls = makeBox(4.5, 3, 4, wallColor);
+  walls.position.y = 1.5;
+  house.add(walls);
+  // Stepped boxy roof.
+  [[5.1, 4.6], [4.1, 3.6], [3.1, 2.6], [2.1, 1.6]].forEach(([w, d], i) => {
+    const step = makeBox(w, 0.6, d, roofColor);
+    step.position.y = 3.3 + i * 0.6;
+    house.add(step);
+  });
+  const chimney = makeBox(0.6, 1.2, 0.6, 0x8d6e63);
+  chimney.position.set(1.4, 4.6, -0.6);
+  house.add(chimney);
+  const door = makeBox(1, 1.8, 0.1, 0x8d5524);
+  door.position.set(0, 0.9, 2.02);
+  house.add(door);
+  for (const side of [-1, 1]) {
+    const pane = makeBox(0.8, 0.8, 0.1, 0xb3e5fc);
+    pane.position.set(side * 1.4, 1.7, 2.02);
+    house.add(pane);
+  }
+  const step = makeBox(1.4, 0.15, 0.6, 0xbdbdbd);
+  step.position.set(0, 0.07, 2.3);
+  house.add(step);
+  house.position.set(x, 0, z);
+  house.userData.wide = true;
+  return house;
+}
 
 // Small seeded random so the world looks the same every time.
 function seededRandom(seed) {
@@ -60,8 +105,19 @@ function makeFlower(x, z, rand) {
 function buildWorld(scene) {
   const rand = seededRandom(42);
   const half = WORLD_SIZE / 2;
-  const colliders = [];
+  const colliders = []; // circles {x, z, r} for trees, boxes {x, z, hw, hd} for houses
   const trees = [];
+
+  // Is a circle of this radius at (x, z) bumping into the fence, a tree or a house?
+  function isBlocked(x, z, radius = 0.5) {
+    const limit = half - 0.5 - radius;
+    if (Math.abs(x) > limit || Math.abs(z) > limit) return true;
+    return colliders.some((c) =>
+      c.r
+        ? Math.hypot(c.x - x, c.z - z) < c.r + radius
+        : Math.abs(c.x - x) < c.hw + radius && Math.abs(c.z - z) < c.hd + radius
+    );
+  }
 
   // Ground tiles: one instanced mesh, each tile gets its own color.
   const ground = new THREE.InstancedMesh(
@@ -86,6 +142,8 @@ function buildWorld(scene) {
         y = -0.75;
       } else if (inPond(x, z, 1.5)) {
         hex = 0xf2d98d; // sandy shore
+      } else if (isPath(x, z)) {
+        hex = rand() < 0.5 ? 0xd7ccc8 : 0xcfc2bd;
       } else {
         hex = grass[Math.floor(rand() * grass.length)];
       }
@@ -97,15 +155,26 @@ function buildWorld(scene) {
   }
   scene.add(ground);
 
-  // Trees, kept away from the pond and the middle of the map.
+  // Houses along the north side of the road.
+  const houseColors = [[0xffe0b2, 0xe57373], [0xb3e5fc, 0x5c6bc0], [0xfff9c4, 0x66bb6a], [0xf8bbd0, 0x8d6e63]];
+  const houses = TOWN.houseXs.map((hx, h) => {
+    const group = makeHouse(hx, TOWN.houseZ, ...houseColors[h]);
+    scene.add(group);
+    trees.push(group); // houses fade out too when they block the view
+    colliders.push({ x: hx, z: TOWN.houseZ, hw: 2.4, hd: 2.1 });
+    return { group, x: hx, z: TOWN.houseZ, doorX: hx, doorZ: TOWN.houseZ + 3 };
+  });
+
+  // Trees, kept away from the pond, the town and the start area.
   let placed = 0;
-  while (placed < 28) {
+  while (placed < 40) {
     const x = Math.round((rand() - 0.5) * (WORLD_SIZE - 4));
     const z = Math.round((rand() - 0.5) * (WORLD_SIZE - 4));
     if (inPond(x, z, 4)) continue;
+    if (z < TOWN.edgeZ || isPath(x, z)) continue;
     if (Math.abs(x) < 5 && z > 0 && z < POND.rz + 14) continue; // keep the start area clear
 
-    if (colliders.some((c) => Math.hypot(c.x - x, c.z - z) < 3)) continue;
+    if (colliders.some((c) => c.r && Math.hypot(c.x - x, c.z - z) < 3)) continue;
     const tree = makeTree(x, z, rand);
     scene.add(tree);
     trees.push(tree);
@@ -114,10 +183,10 @@ function buildWorld(scene) {
   }
 
   // Flowers sprinkled on the grass.
-  for (let f = 0; f < 60; f++) {
+  for (let f = 0; f < 110; f++) {
     const x = (rand() - 0.5) * (WORLD_SIZE - 3);
     const z = (rand() - 0.5) * (WORLD_SIZE - 3);
-    if (inPond(x, z, 2)) continue;
+    if (inPond(x, z, 2) || isPath(x, z) || isBlocked(x, z, 0.3)) continue;
     scene.add(makeFlower(x, z, rand));
   }
 
@@ -172,7 +241,7 @@ function buildWorld(scene) {
   function fadeTrees(playerPos, cameraPos) {
     for (const tree of trees) {
       const p = tree.position;
-      const inTheWay = p.z > playerPos.z + 0.3 && p.z < cameraPos.z + 1.5 && Math.abs(p.x - playerPos.x) < 2.4;
+      const inTheWay = p.z > playerPos.z + 0.3 && p.z < cameraPos.z + 1.5 && Math.abs(p.x - playerPos.x) < (tree.userData.wide ? 3.5 : 2.4);
       const goal = inTheWay ? 0.25 : 1;
       for (const mesh of tree.children) {
         const m = mesh.material;
@@ -183,5 +252,5 @@ function buildWorld(scene) {
     }
   }
 
-  return { update, fadeTrees, colliders, half };
+  return { update, fadeTrees, isBlocked, colliders, houses, half };
 }

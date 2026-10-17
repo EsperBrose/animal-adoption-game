@@ -8,7 +8,7 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0xaee3ff);
-scene.fog = new THREE.Fog(0xaee3ff, 40, 80);
+scene.fog = new THREE.Fog(0xaee3ff, 50, 100);
 
 const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 200);
 
@@ -17,7 +17,7 @@ const sun = new THREE.DirectionalLight(0xffffff, 0.8);
 sun.position.set(15, 25, 10);
 sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
-Object.assign(sun.shadow.camera, { left: -25, right: 25, top: 25, bottom: -25, far: 80 });
+Object.assign(sun.shadow.camera, { left: -32, right: 32, top: 32, bottom: -32, far: 90 });
 scene.add(sun);
 
 const world = buildWorld(scene);
@@ -60,6 +60,9 @@ function finishStyle(name) {
 }
 
 const ui = createUI({ onChoose: turnInto, onColor: recolor, onDone: finishStyle, onHop: () => hop() });
+
+const town = createFamilies(scene, world);
+for (const family of town.families) family.label = ui.makeLabel(`The ${family.name} family`, "family-label");
 
 function resize() {
   const w = window.innerWidth;
@@ -116,11 +119,7 @@ function hop() {
   if (player && !ui.isPickerOpen() && hopY === 0) hopSpeed = 7;
 }
 
-function blocked(x, z) {
-  const limit = world.half - 1;
-  if (Math.abs(x) > limit || Math.abs(z) > limit) return true;
-  return world.colliders.some((c) => Math.hypot(c.x - x, c.z - z) < c.r + 0.5);
-}
+const blocked = (x, z) => world.isBlocked(x, z, 0.5);
 
 const move = new THREE.Vector3();
 function updatePlayer(dt) {
@@ -180,8 +179,18 @@ function updatePlayer(dt) {
 const clock = new THREE.Clock();
 const camGoal = new THREE.Vector3();
 const lookAt = new THREE.Vector3();
-const tagPoint = new THREE.Vector3();
+const screenPoint = new THREE.Vector3();
 let t = 0;
+
+// Put an HTML label over a spot in the 3D world (hidden when off screen).
+function placeLabel(label, x, y, z) {
+  screenPoint.set(x, y, z).project(camera);
+  const onScreen = screenPoint.z < 1 && Math.abs(screenPoint.x) < 1.1 && Math.abs(screenPoint.y) < 1.1;
+  label.style.visibility = onScreen ? "visible" : "hidden";
+  const sx = ((screenPoint.x + 1) / 2) * window.innerWidth;
+  const sy = ((1 - screenPoint.y) / 2) * window.innerHeight;
+  label.style.transform = `translate(${sx}px, ${sy}px) translate(-50%, -100%)`;
+}
 function loop() {
   const dt = Math.min(clock.getDelta(), 0.1);
   t += dt;
@@ -199,13 +208,21 @@ function loop() {
     camera.lookAt(lookAt);
 
     // Keep the name tag floating above the animal's head.
-    tagPoint.set(player.position.x, player.position.y + h + 0.4, player.position.z).project(camera);
-    ui.moveNameTag((tagPoint.x + 1) / 2 * window.innerWidth, (1 - tagPoint.y) / 2 * window.innerHeight);
+    placeLabel(ui.nameTag, player.position.x, player.position.y + h + 0.4, player.position.z);
   } else {
     // Slowly circle the magic pond while choosing.
     const a = t * 0.1;
-    camera.position.set(Math.sin(a) * 22, 16, Math.cos(a) * 22);
-    camera.lookAt(0, 0, 0);
+    camera.position.set(Math.sin(a) * 24, 18, Math.cos(a) * 24);
+    camera.lookAt(0, 0, -4);
+  }
+
+  town.update(dt, t, player);
+  for (const family of town.families) {
+    const leader = family.leader;
+    const near = player && !ui.isPickerOpen() &&
+      Math.hypot(player.position.x - leader.position.x, player.position.z - leader.position.z) < 14;
+    family.label.hidden = !near;
+    if (near) placeLabel(family.label, leader.position.x, leader.userData.height + 0.6, leader.position.z);
   }
 
   renderer.render(scene, camera);
