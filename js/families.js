@@ -59,8 +59,8 @@ function createFamilies(scene, world) {
   function pickTarget(family) {
     for (let tries = 0; tries < 30; tries++) {
       // Half the time stay around town, otherwise explore the park.
-      const x = (rand() - 0.5) * (world.half * 2 - 8);
-      const z = rand() < 0.5 ? TOWN.roadZ + (rand() - 0.5) * 6 : -14 + rand() * (world.half + 10);
+      const x = (rand() - 0.5) * 60;
+      const z = rand() < 0.5 ? TOWN.roadZ + (rand() - 0.5) * 6 : -14 + rand() * 40;
       if (canStand(x, z)) {
         family.target.set(x, 0, z);
         return;

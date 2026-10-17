@@ -1,6 +1,6 @@
 // The boxy 3D world: grass tiles, the magic pond, trees, flowers and a fence.
 
-const WORLD_SIZE = 56;
+const WORLD_SIZE = 96;
 const POND = { rx: 6.5, rz: 4.5 };
 
 // The town is north of the pond: a road with a row of houses behind it.
@@ -12,8 +12,7 @@ const TOWN = {
 };
 
 function isPath(x, z) {
-  const half = WORLD_SIZE / 2;
-  if (Math.abs(z - TOWN.roadZ) < 1.5 && Math.abs(x) < half - 1) return true; // main road
+  if (Math.abs(z - TOWN.roadZ) < 1.5 && Math.abs(x) < 30) return true; // main road
   if (Math.abs(x) < 1.2 && z > TOWN.roadZ && z < -POND.rz - 1) return true; // pond to town
   return TOWN.houseXs.some((hx) => Math.abs(x - hx) < 0.8 && z < TOWN.roadZ && z > TOWN.houseZ + 2); // front paths
 }
@@ -167,7 +166,7 @@ function buildWorld(scene) {
 
   // Trees, kept away from the pond, the town and the start area.
   let placed = 0;
-  while (placed < 40) {
+  while (placed < 130) {
     const x = Math.round((rand() - 0.5) * (WORLD_SIZE - 4));
     const z = Math.round((rand() - 0.5) * (WORLD_SIZE - 4));
     if (inPond(x, z, 4)) continue;
@@ -183,7 +182,7 @@ function buildWorld(scene) {
   }
 
   // Flowers sprinkled on the grass.
-  for (let f = 0; f < 110; f++) {
+  for (let f = 0; f < 380; f++) {
     const x = (rand() - 0.5) * (WORLD_SIZE - 3);
     const z = (rand() - 0.5) * (WORLD_SIZE - 3);
     if (inPond(x, z, 2) || isPath(x, z) || isBlocked(x, z, 0.3)) continue;

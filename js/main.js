@@ -18,7 +18,7 @@ sun.position.set(15, 25, 10);
 sun.castShadow = true;
 sun.shadow.mapSize.set(2048, 2048);
 Object.assign(sun.shadow.camera, { left: -32, right: 32, top: 32, bottom: -32, far: 90 });
-scene.add(sun);
+scene.add(sun, sun.target);
 
 const world = buildWorld(scene);
 const effects = createEffects(scene);
@@ -201,6 +201,9 @@ function loop() {
     updatePlayer(dt);
     animateAnimal(player, t, walkAmount);
     world.fadeTrees(player.position, camera.position);
+    // The sun follows the player so shadows work all over the big map.
+    sun.position.set(player.position.x + 15, 25, player.position.z + 10);
+    sun.target.position.set(player.position.x, 0, player.position.z);
     const h = player.userData.height;
     camGoal.set(player.position.x, player.position.y + 3 + h, player.position.z + 6 + h * 1.5);
     camera.position.lerp(camGoal, 0.05);
