@@ -20,7 +20,7 @@ Hosted on GitHub Pages.
 - [x] Human mode: one button turns you into a human and back; choose girl / boy / other, skin, hair and clothes
 - [x] A forest in the south: pine trees, mushrooms, rocks and darker grass
 - [x] Real-life sizes (elephants and giraffes are huge, tiny animals stay visible), and choose to be a baby or an adult animal
-- [ ] Do tricks, cuddle, or play to fill a family's ❤️ meter
+- [x] Do tricks, cuddle, or play to fill a family's ❤️ meter
 - [ ] Full meter → they adopt you → "Adopted!" celebration, and your family follows you
 
 ## Phase 4 — Your new home and the store

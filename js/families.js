@@ -12,6 +12,47 @@ const FAMILY_SPEED = 2.2;
 const MEET_DISTANCE = 4;
 const LEAVE_DISTANCE = 6;
 
+// ---------- the heart meter ----------
+
+const ACTIONS = {
+  trick: { label: "🎪 Trick", word: "tricks" },
+  cuddle: { label: "🤗 Cuddle", word: "cuddles" },
+  play: { label: "🎾 Play", word: "playing" },
+};
+const MAX_HEARTS = 100;
+const LOVED_GAIN = 25;
+const OTHER_GAIN = 12;
+const FAVORITE_BONUS = 15;
+const BABY_BONUS = 5;
+
+const LOVED_LINES = {
+  trick: ["WOW! Best trick ever!", "Do it again!", "You're so clever!"],
+  cuddle: ["Awww, so soft!", "We love cuddles!", "Best cuddles ever!"],
+  play: ["Fetch! Again!", "You're so fast!", "Playtime is the best!"],
+};
+const OTHER_LINES = ["That's nice!", "Cute!", "Hehe!", "Good job!"];
+
+const pickLine = (lines) => lines[Math.floor(Math.random() * lines.length)];
+
+// The animal did something for a family. Fills their hearts and returns what
+// they say back.
+function reactToAction(family, action, spec) {
+  let gain = action === family.loves ? LOVED_GAIN : OTHER_GAIN;
+  let line = action === family.loves ? pickLine(LOVED_LINES[action]) : pickLine(OTHER_LINES);
+  if (spec.baby) {
+    gain += BABY_BONUS;
+    if (Math.random() < 0.3) line = "Aww, a baby! 🍼";
+  }
+  if (!family.metFavorite && spec.key === family.favorite) {
+    family.metFavorite = true;
+    gain += FAVORITE_BONUS;
+    line = `A ${spec.name.toLowerCase()}! That's our favorite!`;
+  }
+  family.hearts = Math.min(MAX_HEARTS, family.hearts + gain);
+  if (family.hearts >= MAX_HEARTS) line = "We love you so much! 💖";
+  return { gain, line };
+}
+
 // Where each follower walks, relative to the leader (x = sideways, z = behind).
 const FOLLOW_SLOTS = [[-0.9, -1.1], [0.9, -1.1], [0, -2.0]];
 
@@ -89,8 +130,10 @@ function createFamilies(scene, world) {
   function update(dt, t, player) {
     for (const family of families) {
       const leader = family.leader;
+      // Distance to the edge of the player, so big animals can meet people too.
       const toPlayer = player
-        ? Math.hypot(player.position.x - leader.position.x, player.position.z - leader.position.z)
+        ? Math.hypot(player.position.x - leader.position.x, player.position.z - leader.position.z) -
+          ((player.userData.radius ?? 0.5) - 0.5)
         : Infinity;
 
       if (family.state !== "adopted") {
