@@ -203,3 +203,39 @@ button, input { font: inherit; color: inherit; }
   white-space: nowrap;
   pointer-events: none;
 }
+
+.corner-stack {
+  position: fixed;
+  top: 64px;
+  right: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+.corner-stack .corner-button { position: static; }
+.row-right { display: flex; gap: 8px; align-items: center; }
+.form-toggle { background: #42a5f5; box-shadow: 0 4px 0 #1e6fb8; }
+.form-toggle:active { box-shadow: 0 2px 0 #1e6fb8; }
+.small-button {
+  width: 40px;
+  height: 40px;
+  font-size: 18px;
+  background: #fff;
+  border: 3px solid #e0d4c3;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+.choices { display: flex; flex-wrap: wrap; gap: 8px; }
+.choice {
+  padding: 8px 14px;
+  background: #fff;
+  border: 3px solid #e0d4c3;
+  border-radius: 12px;
+  font-weight: bold;
+  cursor: pointer;
+}
+.choice.selected { border-color: #42a5f5; background: #e3f2fd; }
+#human-panel .field { margin-bottom: 10px; }
+#human-panel .swatch { width: 32px; height: 32px; }

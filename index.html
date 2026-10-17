@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Animal Adoption Game</title>
-  <link rel="stylesheet" href="style.css?v=5">
+  <link rel="stylesheet" href="style.css?v=6">
 </head>
 <body>
   <canvas id="game"></canvas>
@@ -38,7 +38,42 @@
     </form>
   </div>
 
-  <button id="change-animal" class="corner-button" hidden>🔮 Change animal</button>
+  <div id="human-panel" class="panel" hidden>
+    <h2>🧍 Your human</h2>
+    <div class="field">
+      <span>I am a…</span>
+      <div id="gender-choices" class="choices"></div>
+    </div>
+    <div class="field">
+      <span>Skin</span>
+      <div id="skin-swatches" class="swatches"></div>
+    </div>
+    <div class="field">
+      <span>Hair</span>
+      <div id="hairstyle-choices" class="choices"></div>
+      <div id="hair-swatches" class="swatches"></div>
+    </div>
+    <div class="field">
+      <span>Shirt</span>
+      <div id="shirt-swatches" class="swatches"></div>
+    </div>
+    <div class="field">
+      <span>Pants</span>
+      <div id="pants-swatches" class="swatches"></div>
+    </div>
+    <div class="row">
+      <button type="button" id="human-cancel" class="plain-button">← Stay an animal</button>
+      <button type="button" id="human-done" class="big-button">Done! 🧍</button>
+    </div>
+  </div>
+
+  <div class="corner-stack">
+    <button id="change-animal" class="corner-button" hidden>🔮 Change animal</button>
+    <div class="row-right">
+      <button id="edit-human" class="small-button" hidden aria-label="Edit your human">✏️</button>
+      <button id="form-toggle" class="corner-button form-toggle" hidden>🧍 Human</button>
+    </div>
+  </div>
   <div id="name-tag" class="name-tag" hidden></div>
 
   <div id="play-controls" hidden>
@@ -48,12 +83,12 @@
   <div id="toast" class="toast"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
-  <script src="js/world.js?v=5"></script>
-  <script src="js/animals.js?v=5"></script>
-  <script src="js/people.js?v=5"></script>
-  <script src="js/families.js?v=5"></script>
-  <script src="js/effects.js?v=5"></script>
-  <script src="js/ui.js?v=5"></script>
-  <script src="js/main.js?v=5"></script>
+  <script src="js/world.js?v=6"></script>
+  <script src="js/animals.js?v=6"></script>
+  <script src="js/people.js?v=6"></script>
+  <script src="js/families.js?v=6"></script>
+  <script src="js/effects.js?v=6"></script>
+  <script src="js/ui.js?v=6"></script>
+  <script src="js/main.js?v=6"></script>
 </body>
 </html>

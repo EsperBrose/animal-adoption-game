@@ -1,7 +1,8 @@
 # Animal Adoption Game — Plan
 
 A **boxy 3D** browser game (blocky animals and world, built with Three.js): visit the magic pond,
-turn into any animal you want, then win over a family in town so they adopt you. Hosted on GitHub Pages.
+turn into any animal you want (or a human!), then win over a family in town so they adopt you.
+Hosted on GitHub Pages.
 
 ## Phase 1 — Setup
 - [x] Create GitHub repo with `PLAN.md` and README
@@ -15,11 +16,29 @@ turn into any animal you want, then win over a family in town so they adopt you.
 - [x] Walk your animal around with arrow keys / WASD or by tapping
 
 ## Phase 3 — Get adopted
-- [x] Families walk around the town (houses, road, boxy people who stop and wave)
+- [x] More land, plus a town with houses, and families who walk around, stop and wave
+- [x] Human mode: one button turns you into a human and back; choose girl / boy / other, skin, hair and clothes
+- [ ] A forest in the south: pine trees, mushrooms, rocks and darker grass
+- [ ] Real-life sizes (elephants and giraffes are huge, tiny animals stay visible), and choose to be a baby or an adult animal
 - [ ] Do tricks, cuddle, or play to fill a family's ❤️ meter
-- [ ] Full meter → they adopt you → "Adopted!" celebration
+- [ ] Full meter → they adopt you → "Adopted!" celebration, and your family follows you
 
-## Phase 4 — Your new home
-- [ ] A house with your family: eat, sleep, play
-- [ ] Go back to the pond to change into a different animal any time
+## Phase 4 — Your new home and the store
+- [ ] Go inside your family's house (a boxy room)
+- [ ] Coins: earn them by playing (making families happy, finding coins around the land)
+- [ ] Town store: buy furniture, toys, pet beds and hats
+- [ ] Decorate: place the things you bought in your house
+- [ ] Eat, sleep and play at home
 - [ ] Save progress in the browser
+
+## Phase 5 — Adoption center (play with friends)
+- [ ] Set up Firebase, a free online service that connects players (you create the project; Claude guides you)
+- [ ] Room codes: share a code like PUPPY-42 so only friends can join your world, and see each other move
+- [ ] Emotes only (👋 ❤️ 🎉), no typed chat, to keep it safe
+- [ ] Adoption center building: animal players wait there and human players adopt them
+- [ ] Adopted friends join your family and come home with you
+
+## Phase 6 — Islands
+- [ ] An airport with a boxy airplane you can board
+- [ ] Fly to another island (a short flight across the sea)
+- [ ] A new island to explore, with its own animals and places, and a flight back home
