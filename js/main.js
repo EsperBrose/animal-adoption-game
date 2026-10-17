@@ -45,7 +45,7 @@ const placeAnimal = (spec) => placePlayer(buildAnimal(spec));
 const placeHuman = (look) => placePlayer(buildPerson({ ...look, kid: true }));
 
 function turnInto(text) {
-  playerSpec = findAnimal(text);
+  playerSpec = { ...findAnimal(text), baby: playerSpec?.baby ?? false };
   isHuman = false;
   placeAnimal(playerSpec);
   effects.poof(player.position);
@@ -55,6 +55,11 @@ function turnInto(text) {
 
 function recolor(color) {
   playerSpec = { ...playerSpec, color };
+  placeAnimal(playerSpec);
+}
+
+function setAge(baby) {
+  playerSpec = { ...playerSpec, baby };
   placeAnimal(playerSpec);
 }
 
@@ -115,6 +120,7 @@ function cancelHuman() {
 const ui = createUI({
   onChoose: turnInto,
   onColor: recolor,
+  onAge: setAge,
   onDone: finishStyle,
   onHop: () => hop(),
   onToggleForm: toggleForm,
@@ -182,7 +188,7 @@ function hop() {
   if (player && !ui.isPickerOpen() && hopY === 0) hopSpeed = 7;
 }
 
-const blocked = (x, z) => world.isBlocked(x, z, 0.5);
+const blocked = (x, z) => world.isBlocked(x, z, player.userData.radius ?? 0.5);
 
 const move = new THREE.Vector3();
 function updatePlayer(dt) {
@@ -205,13 +211,19 @@ function updatePlayer(dt) {
 
   const moving = move.lengthSq() > 0;
   if (moving) {
-    move.normalize().multiplyScalar(WALK_SPEED * dt);
+    move.normalize().multiplyScalar(WALK_SPEED * (player.userData.speed ?? 1) * dt);
     const p = player.position;
     const startX = p.x;
     const startZ = p.z;
     // Try each direction on its own so you slide along trees and fences.
-    if (!blocked(p.x + move.x, p.z)) p.x += move.x;
-    if (!blocked(p.x, p.z + move.z)) p.z += move.z;
+    // If you are already stuck inside something (say you just grew into an
+    // elephant next to a tree), you can always walk out.
+    const stuck = blocked(p.x, p.z);
+    if (stuck || !blocked(p.x + move.x, p.z)) p.x += move.x;
+    if (stuck || !blocked(p.x, p.z + move.z)) p.z += move.z;
+    const edge = world.half - 1;
+    p.x = Math.max(-edge, Math.min(edge, p.x)); // never leave through the fence
+    p.z = Math.max(-edge, Math.min(edge, p.z));
     if (walkTarget && Math.hypot(p.x - startX, p.z - startZ) < 0.001) walkTarget = null; // stuck
 
     // Turn smoothly to face where we're going.
@@ -271,7 +283,8 @@ function frame() {
     sun.position.set(player.position.x + 15, 25, player.position.z + 10);
     sun.target.position.set(player.position.x, 0, player.position.z);
     const h = player.userData.height;
-    camGoal.set(player.position.x, player.position.y + 3 + h, player.position.z + 6 + h * 1.5);
+    // Back the camera up for big animals and lean in for tiny ones.
+    camGoal.set(player.position.x, player.position.y + 1.2 + h * 1.3, player.position.z + 2.5 + h * 2.2);
     camera.position.lerp(camGoal, 0.05);
     lookAt.set(player.position.x, player.position.y + h * 0.5, player.position.z);
     camera.lookAt(lookAt);

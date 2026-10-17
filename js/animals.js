@@ -204,6 +204,7 @@ function buildQuad(s, parts) {
   }
   const head = new THREE.Group();
   head.position.set(0, headY, headZ);
+  parts.head = head;
   g.add(head);
   head.add(part(H, H, H, has("wool") ? accent : c));
 
@@ -324,6 +325,7 @@ function buildBird(s, parts) {
   const H = s.head;
   const head = new THREE.Group();
   head.position.set(0, L + bh + H / 2 - 0.08, bd * 0.12);
+  parts.head = head;
   g.add(head);
   head.add(part(H, H, H, c));
   addEyes(head, H, H * 0.1, H / 2 + 0.03, 0.27, has("bigEyes"));
@@ -363,6 +365,7 @@ function buildSnake(s, parts) {
   }
   const head = new THREE.Group();
   head.position.set(0, 0.25, 0.35);
+  parts.head = head;
   head.add(part(0.5, 0.4, 0.45, s.color));
   addEyes(head, 0.5, 0.1, 0.24, 0.25);
   head.add(part(0.06, 0.03, 0.25, 0xe53935, 0, -0.1, 0.33));
@@ -399,6 +402,21 @@ function buildFish(s, parts) {
   return g;
 }
 
+// Real-life heights in meters, to the top of the head. One game unit is about
+// 0.75 m (a grown-up person is about 2.3 units tall).
+const METERS_PER_UNIT = 0.75;
+const REAL_HEIGHT = {
+  dog: 0.6, cat: 0.3, bunny: 0.3, fox: 0.45, wolf: 0.85, horse: 2.2, unicorn: 2.2, zebra: 2.0,
+  pig: 0.9, cow: 1.6, sheep: 1.0, bear: 1.5, panda: 1.0, koala: 0.7, lion: 1.3, tiger: 1.2,
+  cheetah: 1.0, elephant: 3.3, giraffe: 5.2, deer: 1.6, mouse: 0.08, raccoon: 0.4, monkey: 0.6,
+  frog: 0.08, turtle: 0.25, dragon: 4.5, penguin: 1.1, duck: 0.5, chicken: 0.5, owl: 0.5,
+  parrot: 0.4, snake: 0.15, fish: 0.3,
+};
+// Really tiny animals (mice, frogs) would be almost invisible at true size,
+// so nothing gets shorter than this many game units.
+const MIN_HEIGHT = 0.35;
+const BABY_SCALE = 0.5;
+
 const DEFAULT_SPEC = {
   type: "quad", body: [0.8, 0.7, 1.4], legs: 0.5, legW: 0.22, head: 0.7,
   snout: 0.2, ears: "point", tail: "short", neck: 0, extras: [],
@@ -406,9 +424,22 @@ const DEFAULT_SPEC = {
 
 function buildAnimal(spec) {
   const s = { ...DEFAULT_SPEC, ...spec };
-  const parts = { legs: [], wings: [], segments: [], tail: null, floater: null, height: 1 };
+  const parts = { legs: [], wings: [], segments: [], tail: null, floater: null, head: null, height: 1 };
   const builders = { quad: buildQuad, bird: buildBird, snake: buildSnake, fish: buildFish };
   const model = builders[s.type](s, parts);
+
+  // Grow or shrink to real-life size. Made-up animals keep their own size.
+  const meters = REAL_HEIGHT[s.key];
+  let scale = meters ? Math.max(meters / METERS_PER_UNIT, MIN_HEIGHT) / parts.height : 1;
+  if (s.baby) {
+    scale *= BABY_SCALE;
+    if (parts.head) parts.head.scale.setScalar(1.35); // babies have big heads!
+  }
+  model.scale.setScalar(scale);
+  parts.height *= scale;
+  parts.scale = scale;
+  parts.radius = Math.min(Math.max(parts.height * 0.3, 0.3), 1.4); // for bumping into things
+  parts.speed = Math.min(Math.max(Math.sqrt(parts.height / 1.2), 0.6), 1.8); // big legs, big steps
 
   const animal = new THREE.Group();
   animal.add(model);
@@ -421,7 +452,7 @@ function animateAnimal(animal, t, speed) {
   const p = animal.userData;
   const walk = Math.sin(t * 12);
   for (const leg of p.legs) leg.rotation.x = walk * 0.7 * speed * leg.userData.flip;
-  p.model.position.y = Math.abs(walk) * 0.08 * speed;
+  p.model.position.y = Math.abs(walk) * 0.08 * speed * p.scale;
   if (p.tail) p.tail.rotation.y = Math.sin(t * (speed > 0.1 ? 12 : 4)) * 0.4;
   for (const wing of p.wings) {
     wing.rotation.z = wing.userData.side * Math.sin(t * (speed > 0.1 ? 14 : 3)) * (0.15 + 0.4 * speed);
