@@ -11,10 +11,15 @@ const NAME_IDEAS = [
   "Waffles", "Luna", "Bean", "Sprinkles", "Peanut", "Comet", "Maple", "Bubbles",
 ];
 
+const AGES = [
+  { value: true, label: "🍼 Baby" },
+  { value: false, label: "🐾 Adult" },
+];
+
 const hexToCss = (hex) => "#" + hex.toString(16).padStart(6, "0");
 
 function createUI({
-  onChoose, onColor, onDone, onHop,
+  onChoose, onColor, onAge, onDone, onHop,
   onToggleForm, onEditHuman, onHumanChange, onHumanDone, onHumanCancel,
 }) {
   const picker = document.getElementById("picker");
@@ -83,6 +88,7 @@ function createUI({
     stepStyle.hidden = false;
     styleTitle.textContent = `${spec.emoji} Your ${spec.name}`;
     nameInput.value = currentName || NAME_IDEAS[Math.floor(Math.random() * NAME_IDEAS.length)];
+    choiceRow(document.getElementById("age-choices"), AGES, Boolean(spec.baby), onAge, textButton);
 
     swatches.innerHTML = "";
     const choices = [spec.color, ...COLOR_CHOICES.filter((c) => c !== spec.color)];
