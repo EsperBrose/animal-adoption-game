@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Animal Adoption Game</title>
-  <link rel="stylesheet" href="style.css?v=11">
+  <link rel="stylesheet" href="style.css?v=12">
 </head>
 <body>
   <canvas id="game"></canvas>
@@ -83,6 +83,7 @@
   <div id="play-controls" hidden>
     <div class="hint">Walk: arrow keys / WASD, or tap the ground · Hop: Space</div>
     <button id="hop-button" class="hop-button" aria-label="Hop">⤴️</button>
+    <button id="door-button" class="big-button door-button" hidden>🚪 Go inside</button>
   </div>
   <div id="family-card" class="family-card" hidden>
     <div id="family-title" class="family-title">🏠 Family</div>
@@ -103,12 +104,13 @@
   <div id="toast" class="toast"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
-  <script src="js/world.js?v=11"></script>
-  <script src="js/animals.js?v=11"></script>
-  <script src="js/people.js?v=11"></script>
-  <script src="js/families.js?v=11"></script>
-  <script src="js/effects.js?v=11"></script>
-  <script src="js/ui.js?v=11"></script>
-  <script src="js/main.js?v=11"></script>
+  <script src="js/world.js?v=12"></script>
+  <script src="js/animals.js?v=12"></script>
+  <script src="js/people.js?v=12"></script>
+  <script src="js/families.js?v=12"></script>
+  <script src="js/house.js?v=12"></script>
+  <script src="js/effects.js?v=12"></script>
+  <script src="js/ui.js?v=12"></script>
+  <script src="js/main.js?v=12"></script>
 </body>
 </html>

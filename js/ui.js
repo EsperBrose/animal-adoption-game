@@ -21,7 +21,7 @@ const hexToCss = (hex) => "#" + hex.toString(16).padStart(6, "0");
 function createUI({
   onChoose, onColor, onAge, onDone, onHop,
   onToggleForm, onEditHuman, onHumanChange, onHumanDone, onHumanCancel,
-  onAction,
+  onAction, onDoor,
 }) {
   const picker = document.getElementById("picker");
   const stepAnimal = document.getElementById("step-animal");
@@ -308,6 +308,13 @@ function createUI({
     familyActions.querySelectorAll("button").forEach((b) => (b.disabled = !enabled));
   }
 
+  const doorButton = document.getElementById("door-button");
+  doorButton.addEventListener("click", onDoor);
+  function setDoorButton(label) {
+    doorButton.hidden = !label;
+    if (label) doorButton.textContent = label;
+  }
+
   const isPickerOpen = () => !picker.hidden || !humanPanel.hidden;
 
   return {
@@ -315,5 +322,6 @@ function createUI({
     showHumanPanel, setForm,
     showFamilyCard, hideFamilyCard, setHearts, setActionsEnabled,
     showAdoptCard, showTakenCard, setPlayLocked, showBanner,
+    setDoorButton,
   };
 }
