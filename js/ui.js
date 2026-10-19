@@ -21,7 +21,7 @@ const hexToCss = (hex) => "#" + hex.toString(16).padStart(6, "0");
 function createUI({
   onChoose, onColor, onAge, onDone, onHop,
   onToggleForm, onEditHuman, onHumanChange, onHumanDone, onHumanCancel,
-  onAction, onDoor,
+  onAction, onDoor, onDecorate,
 }) {
   const picker = document.getElementById("picker");
   const stepAnimal = document.getElementById("step-animal");
@@ -372,6 +372,47 @@ function createUI({
     playControls.hidden = false;
   }
 
+  // ---------- decorating ----------
+
+  const decorTray = document.getElementById("decor-tray");
+  const decorateButton = document.getElementById("decorate-button");
+  decorateButton.addEventListener("click", onDecorate);
+  let decorHandlers = null;
+  document.getElementById("decor-turn").addEventListener("click", () => decorHandlers?.onTurn());
+  document.getElementById("decor-done").addEventListener("click", () => decorHandlers?.onDone());
+
+  // Shown inside your house only.
+  const setDecorateButton = (visible) => (decorateButton.hidden = !visible || !decorTray.hidden);
+
+  function showDecorTray(inventory, holding, handlers) {
+    decorHandlers = handlers;
+    const ids = Object.keys(inventory).filter((id) => inventory[id] > 0);
+    document.getElementById("decor-hint").textContent = holding
+      ? "Tap the floor to put it down. ↻ turns it."
+      : ids.length
+        ? "Pick something to place, or tap furniture in the room to pick it up."
+        : "Nothing to place yet. Buy furniture at the 🛒 store! (Tap furniture in the room to pick it up.)";
+    const items = document.getElementById("decor-items");
+    items.innerHTML = "";
+    for (const id of ids) {
+      const item = itemById(id);
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "choice" + (id === holding ? " selected" : "");
+      button.textContent = `${item.emoji} ${item.name} ×${inventory[id]}`;
+      button.addEventListener("click", () => handlers.onPick(id));
+      items.appendChild(button);
+    }
+    decorTray.hidden = false;
+    decorateButton.hidden = true;
+    hint.hidden = true;
+  }
+
+  function hideDecorTray() {
+    decorTray.hidden = true;
+    hint.hidden = false;
+  }
+
   const isPickerOpen = () => !picker.hidden || !humanPanel.hidden || !storePanel.hidden;
 
   return {
@@ -380,5 +421,6 @@ function createUI({
     showFamilyCard, hideFamilyCard, setHearts, setActionsEnabled,
     showAdoptCard, showTakenCard, setPlayLocked, showBanner,
     setDoorButton, setCoins, openStore, renderStore, closeStore,
+    setDecorateButton, showDecorTray, hideDecorTray,
   };
 }

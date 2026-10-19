@@ -131,6 +131,7 @@ const ui = createUI({
   onHumanCancel: cancelHuman,
   onAction: doAction,
   onDoor: () => useDoor(),
+  onDecorate: () => decorator.start(),
 });
 
 const town = createFamilies(scene, world);
@@ -157,6 +158,7 @@ const hatsOwned = new Set();
 let wearing = null; // the hat on your head
 
 const shopState = () => ({ coins, inventory, hats: hatsOwned, wearing });
+
 
 function openShop() {
   walkTarget = null;
@@ -307,6 +309,7 @@ function followCarrier() {
 
 const interior = createInterior(scene);
 world.addArea(interior);
+const decorator = createDecorator({ interior, camera, inventory, ui });
 let insideHouse = false;
 let doorLabel = null; // what the door button says right now (or null when hidden)
 
@@ -331,6 +334,7 @@ function teleportHome(inside) {
     moveFamilyTo(family, interior.entry.x, interior.entry.z - 2.5);
     ui.showToast(`🏠 Home sweet home!`);
   } else {
+    decorator.stop();
     const house = family.house;
     player.position.set(house.doorX, 0, house.doorZ + 1.2);
     player.rotation.y = 0;
@@ -367,6 +371,7 @@ function updateDoor() {
     doorLabel = label;
     ui.setDoorButton(label);
   }
+  ui.setDecorateButton(insideHouse && !decorator.isActive() && !ui.isPickerOpen());
 }
 
 function welcomeHome(family) {
@@ -416,6 +421,7 @@ window.addEventListener("keydown", (event) => {
   const action = { 1: "trick", 2: "cuddle", 3: "play" }[key];
   if (action) doAction(action);
   if (key === "e") useDoor();
+  if (key === "r") decorator.turn();
   if (key === " " || key.startsWith("arrow")) event.preventDefault();
 });
 window.addEventListener("keyup", (event) => keys.delete(event.key.toLowerCase()));
@@ -435,10 +441,12 @@ function setWalkTarget(event) {
 }
 canvas.addEventListener("pointerdown", (event) => {
   if (!player || ui.isPickerOpen()) return;
+  if (decorator.onTap(event)) return; // placing furniture, not walking
   pointerHeld = true;
   setWalkTarget(event);
 });
 canvas.addEventListener("pointermove", (event) => {
+  decorator.onMove(event);
   if (pointerHeld) setWalkTarget(event);
 });
 window.addEventListener("pointerup", () => (pointerHeld = false));

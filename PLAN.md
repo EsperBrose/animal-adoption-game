@@ -27,7 +27,7 @@ Hosted on GitHub Pages.
 - [x] Go inside your family's house (a boxy room)
 - [x] Coins: earn them by playing (making families happy, finding coins around the land)
 - [x] Town store: buy furniture, toys, pet beds and hats
-- [ ] Decorate: place the things you bought in your house
+- [x] Decorate: place the things you bought in your house
 - [ ] Eat, sleep and play at home
 - [ ] Save progress in the browser
 
