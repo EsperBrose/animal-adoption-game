@@ -18,6 +18,21 @@ function createEffects(scene) {
     }
   }
 
+  // A big colorful burst for celebrations.
+  const confettiColors = [0xff5252, 0xffeb3b, 0x69f0ae, 0x40c4ff, 0xe040fb, 0xffab40];
+  function confetti(position) {
+    for (let i = 0; i < 90; i++) {
+      const cube = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ color: confettiColors[i % confettiColors.length], transparent: true }));
+      cube.position.set(position.x, position.y + 1, position.z);
+      const a = Math.random() * Math.PI * 2;
+      const speed = 1 + Math.random() * 4;
+      cube.userData.velocity = new THREE.Vector3(Math.cos(a) * speed, 4 + Math.random() * 5, Math.sin(a) * speed);
+      cube.userData.life = 2.2;
+      scene.add(cube);
+      particles.push(cube);
+    }
+  }
+
   // Little boxy hearts that float up from a spot.
   const heartGeometry = new THREE.BoxGeometry(0.22, 0.22, 0.08);
   function hearts(position, count = 10) {
@@ -78,5 +93,5 @@ function createEffects(scene) {
     }
   }
 
-  return { poof, hearts, ball, update };
+  return { poof, confetti, hearts, ball, update };
 }

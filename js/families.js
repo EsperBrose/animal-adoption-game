@@ -111,7 +111,9 @@ function createFamilies(scene, world) {
   }
 
   // Move a person toward (x, z) without walking through trees or houses.
-  function stepToward(person, x, z, speed, dt) {
+  // With force, walk straight through anything in the way (used when
+  // carrying you home, so the family never gets stuck behind a tree).
+  function stepToward(person, x, z, speed, dt, force = false) {
     const dx = x - person.position.x;
     const dz = z - person.position.z;
     const dist = Math.hypot(dx, dz);
@@ -123,6 +125,11 @@ function createFamilies(scene, world) {
     let moved = false;
     if (!world.isBlocked(p.x + mx, p.z, 0.35)) { p.x += mx; moved = true; }
     if (!world.isBlocked(p.x, p.z + mz, 0.35)) { p.z += mz; moved = true; }
+    if (!moved && force) {
+      p.x += mx;
+      p.z += mz;
+      moved = true;
+    }
     turnToward(person, dx, dz, Math.min(1, dt * 8));
     return moved;
   }
@@ -136,7 +143,7 @@ function createFamilies(scene, world) {
           ((player.userData.radius ?? 0.5) - 0.5)
         : Infinity;
 
-      if (family.state !== "adopted") {
+      if (family.state !== "adopted" && family.state !== "home") {
         if (toPlayer < MEET_DISTANCE && family.state !== "meet") family.state = "meet";
         else if (family.state === "meet" && toPlayer > LEAVE_DISTANCE) {
           family.state = "pause";
@@ -154,6 +161,15 @@ function createFamilies(scene, world) {
           const gx = player.position.x - (player.position.x - leader.position.x) * away;
           const gz = player.position.z - (player.position.z - leader.position.z) * away;
           leaderMoving = stepToward(leader, gx, gz, FAMILY_SPEED * 2.2, dt);
+        }
+      } else if (family.state === "home") {
+        // Walking you home to the front door.
+        const door = family.house;
+        leaderMoving = stepToward(leader, door.doorX, door.doorZ + 0.6, FAMILY_SPEED * 1.4, dt, true);
+        if (Math.hypot(door.doorX - leader.position.x, door.doorZ + 0.6 - leader.position.z) < 0.3) {
+          family.state = "adopted";
+          family.carrying = false;
+          family.arrived = true; // main.js celebrates and clears this
         }
       } else if (family.state === "pause") {
         family.timer -= dt;
@@ -180,7 +196,8 @@ function createFamilies(scene, world) {
         const gx = leader.position.x + sx * cos + sz * sin;
         const gz = leader.position.z - sx * sin + sz * cos;
         const far = Math.hypot(gx - member.position.x, gz - member.position.z);
-        const moving = far > 0.25 && stepToward(member, gx, gz, FAMILY_SPEED * (family.state === "adopted" ? 2.6 : 1.5), dt);
+        const hurry = family.state === "adopted" || family.state === "home" ? 2.6 : 1.5;
+        const moving = far > 0.25 && stepToward(member, gx, gz, FAMILY_SPEED * hurry, dt, family.state === "home");
         member.userData.walk += ((moving ? 1 : 0) - member.userData.walk) * Math.min(1, dt * 8);
       });
 
@@ -189,7 +206,8 @@ function createFamilies(scene, world) {
         if (meeting && player && member.userData.walk < 0.5) {
           turnToward(member, player.position.x - member.position.x, player.position.z - member.position.z, Math.min(1, dt * 6));
         }
-        animatePerson(member, t, member.userData.walk, meeting);
+        const carrying = family.carrying && member === leader;
+        animatePerson(member, t, member.userData.walk, meeting && !carrying, carrying);
       }
     }
   }
@@ -199,5 +217,13 @@ function createFamilies(scene, world) {
     return families.find((f) => f.state === "meet") ?? null;
   }
 
-  return { families, update, meeting };
+  // The family says yes! They carry you home (or walk with you if you're too big).
+  function takeHome(family, carry) {
+    family.state = "home";
+    family.carrying = carry;
+  }
+
+  const adoptedFamily = () => families.find((f) => f.state === "adopted" || f.state === "home") ?? null;
+
+  return { families, update, meeting, takeHome, adoptedFamily };
 }

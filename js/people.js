@@ -108,14 +108,15 @@ function buildPerson(look) {
   return person;
 }
 
-// speed goes from 0 (standing) to 1 (walking). waving raises one arm.
-function animatePerson(person, t, speed, waving = false) {
+// speed goes from 0 (standing) to 1 (walking). waving raises one arm;
+// carrying holds both arms out in front, to hold an animal.
+function animatePerson(person, t, speed, waving = false, carrying = false) {
   const p = person.userData;
   const swing = Math.sin(t * 8 + p.phase) * 0.6 * speed;
   p.legs[0].rotation.x = swing;
   p.legs[1].rotation.x = -swing;
-  p.arms[0].rotation.x = -swing;
-  p.arms[1].rotation.x = waving ? 0 : swing;
+  p.arms[0].rotation.x = carrying ? -1.3 : -swing;
+  p.arms[1].rotation.x = carrying ? -1.3 : waving ? 0 : swing;
   p.arms[1].rotation.z = waving ? 2.6 + Math.sin(t * 10 + p.phase) * 0.3 : 0;
   p.model.position.y = Math.abs(Math.sin(t * 8 + p.phase)) * 0.05 * speed;
 }

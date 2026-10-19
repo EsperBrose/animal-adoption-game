@@ -184,18 +184,79 @@ function updateFamilyCard(dt) {
     actionCooldown -= dt;
     if (actionCooldown <= 0) ui.setActionsEnabled(true);
   }
-  const family = player && !ui.isPickerOpen() ? town.meeting() : null;
-  const key = family ? `${family.name}|${isHuman}` : "";
+  const family = player && !ui.isPickerOpen() && !carriedBy ? town.meeting() : null;
+  if (!family) for (const f of town.families) f.notYet = false; // ask again next visit
+  const myFamily = town.adoptedFamily();
+  let mode = "";
+  if (family) {
+    if (myFamily && myFamily !== family) mode = "taken";
+    else if (!isHuman && family.hearts >= MAX_HEARTS && !family.notYet) mode = "adopt";
+    else mode = "hearts";
+  }
+  const key = family ? `${family.name}|${isHuman}|${mode}` : "";
   if (key !== cardKey) {
     cardKey = key;
-    if (family) {
+    if (!family) ui.hideFamilyCard();
+    else if (mode === "taken") ui.showTakenCard(family);
+    else if (mode === "adopt") {
+      ui.showAdoptCard(family, () => goHome(family), () => (family.notYet = true));
+      say(family, "We want to adopt you! 💖");
+    } else {
       ui.showFamilyCard(family, isHuman);
       ui.setActionsEnabled(actionCooldown <= 0);
       if (!isHuman && family.hearts === 0) say(family, "Hello there, cutie!");
-    } else {
-      ui.hideFamilyCard();
     }
   }
+}
+
+// ---------- getting adopted ----------
+
+const CARRY_LIMIT = 1.5; // animals taller than this get walked home instead
+let carriedBy = null; // the family taking you home
+let carried = false; // in their arms (true) or walking beside them (false)
+
+function goHome(family) {
+  carried = player.userData.height <= CARRY_LIMIT;
+  carriedBy = family;
+  town.takeHome(family, carried);
+  walkTarget = null;
+  ui.hideFamilyCard();
+  ui.setPlayLocked(true);
+  say(family, carried ? "Up you go! Let's go home! 🏠" : "You're too big to carry! Let's walk home together.");
+}
+
+// Keep the player in the carrier's arms, or walking right beside them.
+function followCarrier() {
+  const leader = carriedBy.leader;
+  const heading = leader.rotation.y;
+  const r = player.userData.radius ?? 0.5;
+  const [side, ahead] = carried ? [0, 0.6 + r * 0.5] : [1.2 + r, 0];
+  player.position.set(
+    leader.position.x + side * Math.cos(heading) + ahead * Math.sin(heading),
+    carried ? 1.15 - player.userData.height * 0.35 : 0,
+    leader.position.z - side * Math.sin(heading) + ahead * Math.cos(heading)
+  );
+  player.rotation.y = heading;
+  walkAmount = carried ? 0 : leader.userData.walk;
+}
+
+function welcomeHome(family) {
+  family.arrived = false;
+  carriedBy = null;
+  const house = family.house;
+  player.position.set(house.doorX + 1.5, 0, house.doorZ + 1.5);
+  hopY = 0;
+  effects.confetti(player.position);
+  effects.hearts(player.position, 20);
+  world.markHome(house);
+  family.label.textContent = `❤️ Your family: the ${family.name}s`;
+  ui.setPlayLocked(false);
+  ui.setForm(isHuman);
+  ui.showBanner(
+    "🎉 Adopted! 🎉",
+    `${playerName} the ${playerSpec.name} is now part of the ${family.name} family! They'll follow you everywhere.`
+  );
+  say(family, "Welcome home! 🏠💖");
 }
 
 function resize() {
@@ -252,7 +313,7 @@ canvas.addEventListener("pointermove", (event) => {
 window.addEventListener("pointerup", () => (pointerHeld = false));
 
 function hop() {
-  if (player && !ui.isPickerOpen() && hopY === 0) hopSpeed = 7;
+  if (player && !ui.isPickerOpen() && !carriedBy && hopY === 0) hopSpeed = 7;
 }
 
 const blocked = (x, z) => world.isBlocked(x, z, player.userData.radius ?? 0.5);
@@ -342,7 +403,8 @@ function frame() {
   effects.update(dt);
 
   if (player) {
-    updatePlayer(dt);
+    if (carriedBy) followCarrier();
+    else updatePlayer(dt);
     if (trickSpin > 0) {
       // A full spin in 0.6 seconds.
       const step = Math.min(trickSpin, dt);
@@ -384,6 +446,7 @@ function frame() {
       placeLabel(family.bubble, leader.position.x, leader.userData.height + 1.5, leader.position.z);
     }
   }
+  for (const family of town.families) if (family.arrived) welcomeHome(family);
   updateFamilyCard(dt);
 
   renderer.render(scene, camera);
@@ -413,7 +476,7 @@ if (new URLSearchParams(location.search).has("debug")) {
     if (performance.now() - lastFrame > 200) frame();
     const round = (n) => Math.round(n * 10) / 10;
     status.textContent = JSON.stringify({
-      player: player && { x: round(player.position.x), z: round(player.position.z), human: isHuman },
+      player: player && { x: round(player.position.x), y: round(player.position.y), z: round(player.position.z), human: isHuman, carriedBy: carriedBy?.name ?? null },
       families: town.families.map((f) => ({ name: f.name, state: f.state, hearts: f.hearts, x: round(f.leader.position.x), z: round(f.leader.position.z) })),
     });
   }, 100);

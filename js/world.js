@@ -340,5 +340,23 @@ function buildWorld(scene) {
     }
   }
 
-  return { update, fadeTrees, isBlocked, colliders, houses, half };
+  // A big heart sign over the door of the house that adopted you.
+  function markHome(house) {
+    if (house.marked) return;
+    house.marked = true;
+    // A diamond for the point, plus two bumps on top.
+    const heart = new THREE.Group();
+    const point = makeBox(0.45, 0.45, 0.12, 0xff1744);
+    point.rotation.z = Math.PI / 4;
+    heart.add(point);
+    for (const side of [-1, 1]) {
+      const bump = makeBox(0.3, 0.3, 0.12, 0xff1744);
+      bump.position.set(side * 0.16, 0.2, 0);
+      heart.add(bump);
+    }
+    heart.position.set(0, 2.45, 2.1);
+    house.group.add(heart);
+  }
+
+  return { update, fadeTrees, markHome, isBlocked, colliders, houses, half };
 }
