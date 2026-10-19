@@ -308,6 +308,17 @@ function createUI({
     familyActions.querySelectorAll("button").forEach((b) => (b.disabled = !enabled));
   }
 
+  const coinBadge = document.getElementById("coin-badge");
+  const coinCount = document.getElementById("coin-count");
+  function setCoins(total, gained = 0) {
+    coinCount.textContent = total;
+    if (gained > 0) {
+      coinBadge.classList.remove("bump");
+      void coinBadge.offsetWidth; // restart the bump animation
+      coinBadge.classList.add("bump");
+    }
+  }
+
   const doorButton = document.getElementById("door-button");
   doorButton.addEventListener("click", onDoor);
   function setDoorButton(label) {
@@ -322,6 +333,6 @@ function createUI({
     showHumanPanel, setForm,
     showFamilyCard, hideFamilyCard, setHearts, setActionsEnabled,
     showAdoptCard, showTakenCard, setPlayLocked, showBanner,
-    setDoorButton,
+    setDoorButton, setCoins,
   };
 }
