@@ -323,3 +323,18 @@ button, input { font: inherit; color: inherit; }
   bottom: 92px;
   font-size: 16px;
 }
+
+.coin-badge {
+  position: fixed;
+  top: 64px;
+  left: 16px;
+  padding: 8px 14px;
+  background: #fff8e1;
+  border: 3px solid #ffca28;
+  border-radius: 14px;
+  font-weight: bold;
+  font-size: 18px;
+  box-shadow: 0 4px 0 rgba(90, 62, 43, 0.15);
+}
+.coin-badge.bump { animation: bump 0.35s ease-out; }
+@keyframes bump { 50% { transform: scale(1.25); } }

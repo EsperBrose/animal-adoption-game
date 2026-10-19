@@ -25,7 +25,7 @@ Hosted on GitHub Pages.
 
 ## Phase 4 — Your new home and the store
 - [x] Go inside your family's house (a boxy room)
-- [ ] Coins: earn them by playing (making families happy, finding coins around the land)
+- [x] Coins: earn them by playing (making families happy, finding coins around the land)
 - [ ] Town store: buy furniture, toys, pet beds and hats
 - [ ] Decorate: place the things you bought in your house
 - [ ] Eat, sleep and play at home

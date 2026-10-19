@@ -5,9 +5,12 @@ function createEffects(scene) {
   const geometry = new THREE.BoxGeometry(0.18, 0.18, 0.18);
   const colors = [0xffffff, 0xfff59d, 0xf8bbd0, 0xb3e5fc];
 
-  function poof(position) {
-    for (let i = 0; i < 40; i++) {
-      const cube = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ color: colors[i % colors.length], transparent: true }));
+  // A little gold twinkle when you pick up a coin.
+  const sparkle = (position) => poof(position, [0xffd54f, 0xfff59d, 0xffffff], 12);
+
+  function poof(position, palette = colors, count = 40) {
+    for (let i = 0; i < count; i++) {
+      const cube = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ color: palette[i % palette.length], transparent: true }));
       cube.position.set(position.x, position.y + 0.6, position.z);
       const a = Math.random() * Math.PI * 2;
       const speed = 1.5 + Math.random() * 2.5;
@@ -93,5 +96,5 @@ function createEffects(scene) {
     }
   }
 
-  return { poof, confetti, hearts, ball, update };
+  return { poof, sparkle, confetti, hearts, ball, update };
 }

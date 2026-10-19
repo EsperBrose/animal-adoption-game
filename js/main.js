@@ -139,6 +139,16 @@ for (const family of town.families) {
   family.bubbleTime = 0;
 }
 
+// ---------- coins ----------
+
+const coinField = createCoins(scene, world);
+let coins = 0;
+
+function addCoins(amount) {
+  coins += amount;
+  ui.setCoins(coins, amount);
+}
+
 // ---------- making families happy ----------
 
 const ACTION_COOLDOWN = 1.2;
@@ -176,6 +186,7 @@ function doAction(action) {
 
   const { line } = reactToAction(family, action, playerSpec);
   say(family, line);
+  addCoins(action === family.loves ? 3 : 2); // families give you a little treat money
   effects.hearts(leaderPos, action === family.loves ? 12 : 5);
   ui.setHearts(family.hearts);
 }
@@ -318,6 +329,7 @@ function welcomeHome(family) {
     `${playerName} the ${playerSpec.name} is now part of the ${family.name} family! They'll follow you everywhere.`
   );
   say(family, "Welcome home! 🏠💖");
+  addCoins(50); // a welcome-home present
 }
 
 function resize() {
@@ -495,6 +507,10 @@ function frame() {
   }
 
   town.update(dt, t, player);
+  coinField.update(dt, t, insideHouse ? null : player, (value, position) => {
+    addCoins(value);
+    effects.sparkle(position);
+  });
   for (const family of town.families) {
     const leader = family.leader;
     const near = player && !ui.isPickerOpen() &&
