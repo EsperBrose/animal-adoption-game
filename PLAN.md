@@ -21,7 +21,7 @@ Hosted on GitHub Pages.
 - [x] A forest in the south: pine trees, mushrooms, rocks and darker grass
 - [x] Real-life sizes (elephants and giraffes are huge, tiny animals stay visible), and choose to be a baby or an adult animal
 - [x] Do tricks, cuddle, or play to fill a family's ❤️ meter
-- [ ] Full meter → they adopt you → "Adopted!" celebration, and your family follows you
+- [x] Full meter → they adopt you, pick you up and carry you home (big animals walk) → "Adopted!" celebration, and your family follows you
 
 ## Phase 4 — Your new home and the store
 - [ ] Go inside your family's house (a boxy room)

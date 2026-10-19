@@ -247,6 +247,52 @@ function createUI({
     hint.hidden = true;
   }
 
+  // Hearts are full: the family asks to adopt you.
+  function showAdoptCard(family, onYes, onNo) {
+    document.getElementById("family-title").textContent = `💖 The ${family.name} family wants to adopt you!`;
+    document.getElementById("family-hint").textContent = "Will you be part of their family?";
+    familyActions.innerHTML = "";
+    for (const [label, handler, className] of [
+      ["🏠 Yes, take me home!", onYes, "big-button"],
+      ["Not yet", onNo, "plain-button"],
+    ]) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = className;
+      button.textContent = label;
+      button.addEventListener("click", handler);
+      familyActions.appendChild(button);
+    }
+    setHearts(family.hearts);
+    familyCard.hidden = false;
+    hint.hidden = true;
+  }
+
+  // Another family, when you already have one.
+  function showTakenCard(family) {
+    document.getElementById("family-title").textContent = `🏠 The ${family.name} family`;
+    document.getElementById("family-hint").textContent = "👋 You already have a family! 💕";
+    familyActions.innerHTML = "";
+    setHearts(family.hearts);
+    familyCard.hidden = false;
+    hint.hidden = true;
+  }
+
+  // While a family carries you home, the controls go away.
+  const cornerStack = document.querySelector(".corner-stack");
+  function setPlayLocked(locked) {
+    cornerStack.hidden = locked;
+    playControls.hidden = locked;
+  }
+
+  const banner = document.getElementById("banner");
+  document.getElementById("banner-ok").addEventListener("click", () => (banner.hidden = true));
+  function showBanner(title, text) {
+    document.getElementById("banner-title").textContent = title;
+    document.getElementById("banner-text").textContent = text;
+    banner.hidden = false;
+  }
+
   function hideFamilyCard() {
     familyCard.hidden = true;
     hint.hidden = false;
@@ -268,5 +314,6 @@ function createUI({
     showPicker, hidePicker, isPickerOpen, showStyleStep, setNameTag, nameTag, makeLabel, showToast,
     showHumanPanel, setForm,
     showFamilyCard, hideFamilyCard, setHearts, setActionsEnabled,
+    showAdoptCard, showTakenCard, setPlayLocked, showBanner,
   };
 }
