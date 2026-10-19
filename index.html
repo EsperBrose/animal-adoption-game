@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Animal Adoption Game</title>
-  <link rel="stylesheet" href="style.css?v=13">
+  <link rel="stylesheet" href="style.css?v=14">
 </head>
 <body>
   <canvas id="game"></canvas>
@@ -72,6 +72,15 @@
     </div>
   </div>
 
+  <div id="store-panel" class="panel" hidden>
+    <h2>🛒 The Town Store</h2>
+    <p>You have 🪙 <b id="store-coins">0</b>. Furniture goes in your house; hats go on your head!</p>
+    <div id="store-grid" class="store-grid"></div>
+    <div class="row">
+      <button type="button" id="store-close" class="big-button">Done shopping 👋</button>
+    </div>
+  </div>
+
   <div class="corner-stack">
     <button id="change-animal" class="corner-button" hidden>🔮 Change animal</button>
     <div class="row-right">
@@ -105,14 +114,15 @@
   <div id="toast" class="toast"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
-  <script src="js/world.js?v=13"></script>
-  <script src="js/animals.js?v=13"></script>
-  <script src="js/people.js?v=13"></script>
-  <script src="js/families.js?v=13"></script>
-  <script src="js/house.js?v=13"></script>
-  <script src="js/coins.js?v=13"></script>
-  <script src="js/effects.js?v=13"></script>
-  <script src="js/ui.js?v=13"></script>
-  <script src="js/main.js?v=13"></script>
+  <script src="js/world.js?v=14"></script>
+  <script src="js/animals.js?v=14"></script>
+  <script src="js/people.js?v=14"></script>
+  <script src="js/families.js?v=14"></script>
+  <script src="js/house.js?v=14"></script>
+  <script src="js/coins.js?v=14"></script>
+  <script src="js/store.js?v=14"></script>
+  <script src="js/effects.js?v=14"></script>
+  <script src="js/ui.js?v=14"></script>
+  <script src="js/main.js?v=14"></script>
 </body>
 </html>

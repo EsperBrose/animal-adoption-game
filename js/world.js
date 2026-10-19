@@ -8,11 +8,13 @@ const TOWN = {
   roadZ: -15,
   houseZ: -21,
   houseXs: [-18, -6, 6, 18],
+  storeX: -30,
   edgeZ: -11, // everything north of this is town (no trees)
 };
 
 function isPath(x, z) {
-  if (Math.abs(z - TOWN.roadZ) < 1.5 && Math.abs(x) < 30) return true; // main road
+  if (Math.abs(z - TOWN.roadZ) < 1.5 && Math.abs(x) < 34) return true; // main road
+  if (Math.abs(x - TOWN.storeX) < 0.9 && z < TOWN.roadZ && z > TOWN.houseZ + 2) return true; // store path
   if (Math.abs(x) < 1.2 && z > TOWN.roadZ && z < -POND.rz - 1) return true; // pond to town
   return TOWN.houseXs.some((hx) => Math.abs(x - hx) < 0.8 && z < TOWN.roadZ && z > TOWN.houseZ + 2); // front paths
 }
@@ -87,6 +89,53 @@ function makeTree(x, z, rand) {
   tree.position.set(x, 0, z);
   tree.rotation.y = Math.floor(rand() * 4) * (Math.PI / 2);
   return tree;
+}
+
+// The town store: a white shop with a striped awning and a sign.
+function makeStore(x, z) {
+  const store = new THREE.Group();
+  const walls = makeBox(6, 3.5, 5, 0xfafafa);
+  walls.position.y = 1.75;
+  store.add(walls);
+  const roof = makeBox(6.4, 0.4, 5.4, 0x90a4ae);
+  roof.position.y = 3.7;
+  store.add(roof);
+  // Red and white awning stripes over the front.
+  for (let i = 0; i < 6; i++) {
+    const stripe = makeBox(1, 0.12, 1.2, i % 2 ? 0xffffff : 0xe53935);
+    stripe.position.set(-2.5 + i, 3.0, 2.9);
+    stripe.rotation.x = 0.35;
+    store.add(stripe);
+  }
+  const door = makeBox(1.4, 2.2, 0.1, 0x81d4fa);
+  door.position.set(0, 1.1, 2.52);
+  store.add(door);
+  for (const side of [-1, 1]) {
+    const pane = makeBox(1.6, 1.4, 0.1, 0xb3e5fc);
+    pane.position.set(side * 1.9, 1.6, 2.52);
+    store.add(pane);
+  }
+  // Sign with words on it, drawn onto a canvas.
+  const canvas = document.createElement("canvas");
+  canvas.width = 512;
+  canvas.height = 128;
+  const ctx = canvas.getContext("2d");
+  ctx.fillStyle = "#ffca28";
+  ctx.fillRect(0, 0, 512, 128);
+  ctx.fillStyle = "#5a3e2b";
+  ctx.font = "bold 72px Trebuchet MS, sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("🛒 STORE", 256, 68);
+  const sign = new THREE.Mesh(
+    new THREE.BoxGeometry(4, 1, 0.2),
+    new THREE.MeshLambertMaterial({ map: new THREE.CanvasTexture(canvas) })
+  );
+  sign.position.set(0, 4.5, 2.4);
+  store.add(sign);
+  store.position.set(x, 0, z);
+  store.userData.wide = true;
+  return store;
 }
 
 // ---------- the forest (south part of the land) ----------
@@ -220,6 +269,13 @@ function buildWorld(scene) {
     return { group, x: hx, z: TOWN.houseZ, doorX: hx, doorZ: TOWN.houseZ + 3 };
   });
 
+  // The store at the west end of the road.
+  const storeGroup = makeStore(TOWN.storeX, TOWN.houseZ);
+  scene.add(storeGroup);
+  trees.push(storeGroup); // fades out like houses when it blocks the view
+  colliders.push({ x: TOWN.storeX, z: TOWN.houseZ, hw: 3.1, hd: 2.6 });
+  const store = { x: TOWN.storeX, doorX: TOWN.storeX, doorZ: TOWN.houseZ + 3.3 };
+
   // The forest: lots of pine trees, with a dirt trail winding through.
   const edge = half - 2;
   for (let tries = 0, pines = 0; pines < 200 && tries < 5000; tries++) {
@@ -332,7 +388,9 @@ function buildWorld(scene) {
   function fadeTrees(playerPos, cameraPos) {
     for (const tree of trees) {
       const p = tree.position;
-      const inTheWay = p.z > playerPos.z + 0.3 && p.z < cameraPos.z + 1.5 && Math.abs(p.x - playerPos.x) < (tree.userData.wide ? 3.5 : 2.4);
+      const between = p.z > playerPos.z + 0.3 && p.z < cameraPos.z + 1.5 && Math.abs(p.x - playerPos.x) < (tree.userData.wide ? 3.5 : 2.4);
+      const nextToCamera = Math.hypot(p.x - cameraPos.x, p.z - cameraPos.z) < (tree.userData.wide ? 4 : 2.8);
+      const inTheWay = between || nextToCamera;
       if (!inTheWay && !tree.userData.faded) continue; // most trees: nothing to do
       const goal = inTheWay ? 0.25 : 1;
       for (const mesh of tree.children) {
@@ -364,5 +422,5 @@ function buildWorld(scene) {
     house.group.add(heart);
   }
 
-  return { update, fadeTrees, markHome, isBlocked, addArea, colliders, houses, half };
+  return { update, fadeTrees, markHome, isBlocked, addArea, colliders, houses, store, half };
 }

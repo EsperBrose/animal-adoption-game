@@ -205,6 +205,7 @@ function buildQuad(s, parts) {
   const head = new THREE.Group();
   head.position.set(0, headY, headZ);
   parts.head = head;
+  parts.headSize = H;
   g.add(head);
   head.add(part(H, H, H, has("wool") ? accent : c));
 
@@ -326,6 +327,7 @@ function buildBird(s, parts) {
   const head = new THREE.Group();
   head.position.set(0, L + bh + H / 2 - 0.08, bd * 0.12);
   parts.head = head;
+  parts.headSize = H;
   g.add(head);
   head.add(part(H, H, H, c));
   addEyes(head, H, H * 0.1, H / 2 + 0.03, 0.27, has("bigEyes"));
@@ -365,6 +367,7 @@ function buildSnake(s, parts) {
   }
   const head = new THREE.Group();
   head.position.set(0, 0.25, 0.35);
+  parts.headSize = 0.45;
   parts.head = head;
   head.add(part(0.5, 0.4, 0.45, s.color));
   addEyes(head, 0.5, 0.1, 0.24, 0.25);

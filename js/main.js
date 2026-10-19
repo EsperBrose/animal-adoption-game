@@ -39,6 +39,7 @@ function placePlayer(model) {
   player.position.copy(position);
   player.rotation.y = heading;
   scene.add(player);
+  attachHat(); // keep your hat on when you change shape
 }
 
 const placeAnimal = (spec) => placePlayer(buildAnimal(spec));
@@ -147,6 +148,56 @@ let coins = 0;
 function addCoins(amount) {
   coins += amount;
   ui.setCoins(coins, amount);
+}
+
+// ---------- the store ----------
+
+const inventory = {}; // furniture you own but haven't placed yet: { bed: 1, ... }
+const hatsOwned = new Set();
+let wearing = null; // the hat on your head
+
+const shopState = () => ({ coins, inventory, hats: hatsOwned, wearing });
+
+function openShop() {
+  walkTarget = null;
+  ui.openStore(shopState(), { onBuy: buy, onWear: wearHat });
+}
+
+function buy(id) {
+  const item = itemById(id);
+  if (coins < item.price) return;
+  coins -= item.price;
+  ui.setCoins(coins);
+  if (item.kind === "hat") {
+    hatsOwned.add(id);
+    wearHat(id);
+  } else {
+    inventory[id] = (inventory[id] ?? 0) + 1;
+    ui.showToast(`${item.emoji} You bought a ${item.name}! Put it in your house.`);
+  }
+  ui.renderStore(shopState());
+}
+
+function wearHat(id) {
+  wearing = id;
+  attachHat();
+  ui.renderStore(shopState());
+}
+
+// Put the hat you're wearing on top of the current head (animals and people).
+function attachHat() {
+  if (!player) return;
+  const { head, headSize } = player.userData;
+  if (player.userData.hat) {
+    player.userData.hat.parent?.remove(player.userData.hat);
+    player.userData.hat = null;
+  }
+  if (!wearing || !head) return;
+  const hat = buildHat(wearing);
+  hat.scale.setScalar(headSize);
+  hat.position.y = headSize / 2;
+  head.add(hat);
+  player.userData.hat = hat;
 }
 
 // ---------- making families happy ----------
@@ -289,21 +340,27 @@ function teleportHome(inside) {
   camera.position.copy(camGoal);
 }
 
+const SHOP_LABEL = "🛒 Shop";
+
 function useDoor() {
-  if (doorLabel) teleportHome(!insideHouse);
+  if (doorLabel === SHOP_LABEL) openShop();
+  else if (doorLabel) teleportHome(!insideHouse);
 }
 
-// Show "Go inside" at your family's front door, and "Go outside" on the doormat.
+// The context button: "Go inside" at your family's front door, "Go outside"
+// on the doormat, and "Shop" at the store door.
 function updateDoor() {
   const family = town.adoptedFamily();
   let label = null;
-  if (player && family && family.state === "adopted" && !carriedBy && !ui.isPickerOpen()) {
+  const near = (x, z) =>
+    Math.hypot(player.position.x - x, player.position.z - z) < 2.2 + (player.userData.radius ?? 0.5);
+  if (player && !carriedBy && !ui.isPickerOpen()) {
     if (insideHouse) {
       if (interior.nearExit(player.position)) label = "🚪 Go outside";
-    } else {
-      const house = family.house;
-      const reach = 2.2 + (player.userData.radius ?? 0.5);
-      if (Math.hypot(player.position.x - house.doorX, player.position.z - house.doorZ) < reach) label = "🚪 Go inside";
+    } else if (near(world.store.doorX, world.store.doorZ)) {
+      label = SHOP_LABEL;
+    } else if (family && family.state === "adopted" && near(family.house.doorX, family.house.doorZ)) {
+      label = "🚪 Go inside";
     }
   }
   if (label !== doorLabel) {
@@ -554,6 +611,8 @@ if (new URLSearchParams(location.search).has("debug")) {
     const family = town.families.find((f) => f.name === status.dataset.hearts);
     if (family) family.hearts = MAX_HEARTS;
   }).observe(status, { attributes: true, attributeFilter: ["data-hearts"] });
+  // data-coins="100" gives you coins, to test the store.
+  new MutationObserver(() => addCoins(Number(status.dataset.coins) || 0)).observe(status, { attributes: true, attributeFilter: ["data-coins"] });
   setInterval(() => {
     // Keep the game running even when the browser isn't drawing frames.
     if (performance.now() - lastFrame > 200) frame();
