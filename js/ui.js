@@ -326,13 +326,59 @@ function createUI({
     if (label) doorButton.textContent = label;
   }
 
-  const isPickerOpen = () => !picker.hidden || !humanPanel.hidden;
+  // ---------- the store ----------
+
+  const storePanel = document.getElementById("store-panel");
+  document.getElementById("store-close").addEventListener("click", closeStore);
+  let storeHandlers = null;
+
+  // shop = { coins, inventory: {id: count}, hats: Set, wearing }
+  function renderStore(shop) {
+    document.getElementById("store-coins").textContent = shop.coins;
+    const grid = document.getElementById("store-grid");
+    grid.innerHTML = "";
+    for (const item of STORE_ITEMS) {
+      const card = document.createElement("div");
+      card.className = "store-card";
+      const owned = item.kind === "hat" ? (shop.hats.has(item.id) ? 1 : 0) : shop.inventory[item.id] ?? 0;
+      card.innerHTML = `<span class="emoji">${item.emoji}</span><b>${item.name}</b>` +
+        `<span class="owned">${owned ? (item.kind === "hat" ? "Yours!" : `You have ${owned}`) : "&nbsp;"}</span>`;
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "big-button buy-button";
+      if (item.kind === "hat" && owned) {
+        const wearing = shop.wearing === item.id;
+        button.textContent = wearing ? "Take off" : "Wear";
+        button.addEventListener("click", () => storeHandlers.onWear(wearing ? null : item.id));
+      } else {
+        button.textContent = `🪙 ${item.price}`;
+        button.disabled = shop.coins < item.price;
+        button.addEventListener("click", () => storeHandlers.onBuy(item.id));
+      }
+      card.appendChild(button);
+      grid.appendChild(card);
+    }
+  }
+
+  function openStore(shop, handlers) {
+    storeHandlers = handlers;
+    renderStore(shop);
+    storePanel.hidden = false;
+    playControls.hidden = true;
+  }
+
+  function closeStore() {
+    storePanel.hidden = true;
+    playControls.hidden = false;
+  }
+
+  const isPickerOpen = () => !picker.hidden || !humanPanel.hidden || !storePanel.hidden;
 
   return {
     showPicker, hidePicker, isPickerOpen, showStyleStep, setNameTag, nameTag, makeLabel, showToast,
     showHumanPanel, setForm,
     showFamilyCard, hideFamilyCard, setHearts, setActionsEnabled,
     showAdoptCard, showTakenCard, setPlayLocked, showBanner,
-    setDoorButton, setCoins,
+    setDoorButton, setCoins, openStore, renderStore, closeStore,
   };
 }

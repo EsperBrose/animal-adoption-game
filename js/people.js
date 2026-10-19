@@ -104,7 +104,7 @@ function buildPerson(look) {
       break;
   }
 
-  person.userData = { model, legs, arms, phase: Math.random() * 6, height: (look.kid ? 0.7 : 1) * 2.3 };
+  person.userData = { model, legs, arms, head, headSize: 0.6, phase: Math.random() * 6, height: (look.kid ? 0.7 : 1) * 2.3 };
   return person;
 }
 

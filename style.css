@@ -338,3 +338,25 @@ button, input { font: inherit; color: inherit; }
 }
 .coin-badge.bump { animation: bump 0.35s ease-out; }
 @keyframes bump { 50% { transform: scale(1.25); } }
+
+.store-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.store-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 10px 6px;
+  background: #fff;
+  border: 3px solid #e0d4c3;
+  border-radius: 14px;
+  font-size: 14px;
+}
+.store-card .emoji { font-size: 32px; }
+.store-card .owned { font-size: 12px; color: #8d6e63; }
+.buy-button { padding: 6px 12px; font-size: 14px; }
+.buy-button:disabled { background: #bdbdbd; box-shadow: 0 4px 0 #9e9e9e; cursor: default; }
