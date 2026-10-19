@@ -69,5 +69,61 @@ function createInterior(scene) {
   const entry = new THREE.Vector3(ROOM.x, 0, ROOM.z + halfD - 1.3);
   const nearExit = (pos) => Math.hypot(pos.x - ROOM.x, pos.z - (ROOM.z + halfD - 0.8)) < 1.4;
 
-  return { group, contains, isBlocked, entry, nearExit, placed };
+  // ---------- decorating ----------
+
+  // Footprint of an item turned by `turns` quarter turns.
+  function footprint(item, turns) {
+    return turns % 2 ? { hw: item.hd, hd: item.hw } : { hw: item.hw, hd: item.hd };
+  }
+
+  // Snap a world spot to the room's half-unit grid, keeping the item inside the walls.
+  function snap(worldX, worldZ, id, turns) {
+    const { hw, hd } = footprint(itemById(id), turns);
+    const clamp = (v, limit) => Math.max(-limit, Math.min(limit, v));
+    return {
+      x: clamp(Math.round((worldX - ROOM.x) * 2) / 2, halfW - hw - 0.1),
+      z: clamp(Math.round((worldZ - ROOM.z) * 2) / 2, halfD - hd - 0.1),
+    };
+  }
+
+  function placeItem(id, x, z, turns) {
+    const mesh = buildItem(id);
+    mesh.position.set(x, 0, z);
+    mesh.rotation.y = (turns * Math.PI) / 2;
+    group.add(mesh);
+    const spot = { id, x, z, turns, mesh, ...footprint(itemById(id), turns) };
+    mesh.userData.placed = spot;
+    placed.push(spot);
+    return spot;
+  }
+
+  function removeItem(entry) {
+    group.remove(entry.mesh);
+    placed.splice(placed.indexOf(entry), 1);
+  }
+
+  // A see-through copy of an item that follows your finger while placing.
+  function makeGhost(id) {
+    const ghost = buildItem(id);
+    ghost.traverse((mesh) => {
+      if (!mesh.material) return;
+      mesh.material = mesh.material.clone();
+      mesh.material.transparent = true;
+      mesh.material.opacity = 0.5;
+      mesh.castShadow = false;
+    });
+    group.add(ghost);
+    return ghost;
+  }
+
+  // Which placed item (if any) is under this ray?
+  function itemAt(raycaster) {
+    const hits = raycaster.intersectObjects(placed.map((p) => p.mesh), true);
+    if (!hits.length) return null;
+    let object = hits[0].object;
+    while (object && !object.userData.placed) object = object.parent;
+    return object ? object.userData.placed : null;
+  }
+
+  return { group, contains, isBlocked, entry, nearExit, placed, snap, placeItem, removeItem, makeGhost, itemAt };
 }

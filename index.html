@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Animal Adoption Game</title>
-  <link rel="stylesheet" href="style.css?v=14">
+  <link rel="stylesheet" href="style.css?v=15">
 </head>
 <body>
   <canvas id="game"></canvas>
@@ -81,6 +81,17 @@
     </div>
   </div>
 
+  <div id="decor-tray" class="family-card decor-tray" hidden>
+    <div class="family-title">🛋️ Decorate your room</div>
+    <div id="decor-hint" class="family-hint"></div>
+    <div id="decor-items" class="choices decor-items"></div>
+    <div class="row">
+      <button type="button" id="decor-turn" class="plain-button">↻ Turn (R)</button>
+      <button type="button" id="decor-done" class="big-button">Done ✨</button>
+    </div>
+  </div>
+  <button id="decorate-button" class="big-button decorate-button" hidden>🛋️ Decorate</button>
+
   <div class="corner-stack">
     <button id="change-animal" class="corner-button" hidden>🔮 Change animal</button>
     <div class="row-right">
@@ -114,15 +125,16 @@
   <div id="toast" class="toast"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/three@0.149.0/build/three.min.js"></script>
-  <script src="js/world.js?v=14"></script>
-  <script src="js/animals.js?v=14"></script>
-  <script src="js/people.js?v=14"></script>
-  <script src="js/families.js?v=14"></script>
-  <script src="js/house.js?v=14"></script>
-  <script src="js/coins.js?v=14"></script>
-  <script src="js/store.js?v=14"></script>
-  <script src="js/effects.js?v=14"></script>
-  <script src="js/ui.js?v=14"></script>
-  <script src="js/main.js?v=14"></script>
+  <script src="js/world.js?v=15"></script>
+  <script src="js/animals.js?v=15"></script>
+  <script src="js/people.js?v=15"></script>
+  <script src="js/families.js?v=15"></script>
+  <script src="js/house.js?v=15"></script>
+  <script src="js/coins.js?v=15"></script>
+  <script src="js/store.js?v=15"></script>
+  <script src="js/decorate.js?v=15"></script>
+  <script src="js/effects.js?v=15"></script>
+  <script src="js/ui.js?v=15"></script>
+  <script src="js/main.js?v=15"></script>
 </body>
 </html>
