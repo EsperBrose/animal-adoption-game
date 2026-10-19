@@ -142,6 +142,7 @@ function createFamilies(scene, world) {
         ? Math.hypot(player.position.x - leader.position.x, player.position.z - leader.position.z) -
           ((player.userData.radius ?? 0.5) - 0.5)
         : Infinity;
+      family.distance = toPlayer;
 
       if (family.state !== "adopted" && family.state !== "home") {
         if (toPlayer < MEET_DISTANCE && family.state !== "meet") family.state = "meet";
@@ -212,9 +213,12 @@ function createFamilies(scene, world) {
     }
   }
 
-  // The family your animal is currently visiting, if any.
+  // The family your animal is currently visiting, if any (the closest one,
+  // when two families are standing nearby).
   function meeting() {
-    return families.find((f) => f.state === "meet") ?? null;
+    const near = families.filter((f) => f.state === "meet");
+    near.sort((a, b) => a.distance - b.distance);
+    return near[0] ?? null;
   }
 
   // The family says yes! They carry you home (or walk with you if you're too big).
