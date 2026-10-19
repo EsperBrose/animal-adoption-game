@@ -129,6 +129,7 @@ const ui = createUI({
   onHumanDone: finishHuman,
   onHumanCancel: cancelHuman,
   onAction: doAction,
+  onDoor: () => useDoor(),
 });
 
 const town = createFamilies(scene, world);
@@ -240,6 +241,66 @@ function followCarrier() {
   walkAmount = carried ? 0 : leader.userData.walk;
 }
 
+// ---------- inside your house ----------
+
+const interior = createInterior(scene);
+world.addArea(interior);
+let insideHouse = false;
+let doorLabel = null; // what the door button says right now (or null when hidden)
+
+// Back the camera up for big animals and lean in for tiny ones.
+function setCameraGoal() {
+  const h = player.userData.height;
+  camGoal.set(player.position.x, player.position.y + 1.2 + h * 1.3, player.position.z + 2.5 + h * 2.2);
+}
+
+function moveFamilyTo(family, x, z) {
+  family.members.forEach((member, i) => member.position.set(x + (i - 1) * 0.9, 0, z));
+}
+
+// Teleport somewhere: player, family and camera all jump together.
+function teleportHome(inside) {
+  const family = town.adoptedFamily();
+  insideHouse = inside;
+  walkTarget = null;
+  if (inside) {
+    player.position.copy(interior.entry);
+    player.rotation.y = Math.PI; // face into the room
+    moveFamilyTo(family, interior.entry.x, interior.entry.z - 2.5);
+    ui.showToast(`🏠 Home sweet home!`);
+  } else {
+    const house = family.house;
+    player.position.set(house.doorX, 0, house.doorZ + 1.2);
+    player.rotation.y = 0;
+    moveFamilyTo(family, house.doorX + 1.8, house.doorZ + 0.8);
+  }
+  setCameraGoal();
+  camera.position.copy(camGoal);
+}
+
+function useDoor() {
+  if (doorLabel) teleportHome(!insideHouse);
+}
+
+// Show "Go inside" at your family's front door, and "Go outside" on the doormat.
+function updateDoor() {
+  const family = town.adoptedFamily();
+  let label = null;
+  if (player && family && family.state === "adopted" && !carriedBy && !ui.isPickerOpen()) {
+    if (insideHouse) {
+      if (interior.nearExit(player.position)) label = "🚪 Go outside";
+    } else {
+      const house = family.house;
+      const reach = 2.2 + (player.userData.radius ?? 0.5);
+      if (Math.hypot(player.position.x - house.doorX, player.position.z - house.doorZ) < reach) label = "🚪 Go inside";
+    }
+  }
+  if (label !== doorLabel) {
+    doorLabel = label;
+    ui.setDoorButton(label);
+  }
+}
+
 function welcomeHome(family) {
   family.arrived = false;
   carriedBy = null;
@@ -285,6 +346,7 @@ window.addEventListener("keydown", (event) => {
   if (key === " ") hop();
   const action = { 1: "trick", 2: "cuddle", 3: "play" }[key];
   if (action) doAction(action);
+  if (key === "e") useDoor();
   if (key === " " || key.startsWith("arrow")) event.preventDefault();
 });
 window.addEventListener("keyup", (event) => keys.delete(event.key.toLowerCase()));
@@ -418,8 +480,7 @@ function frame() {
     sun.position.set(player.position.x + 15, 25, player.position.z + 10);
     sun.target.position.set(player.position.x, 0, player.position.z);
     const h = player.userData.height;
-    // Back the camera up for big animals and lean in for tiny ones.
-    camGoal.set(player.position.x, player.position.y + 1.2 + h * 1.3, player.position.z + 2.5 + h * 2.2);
+    setCameraGoal();
     camera.position.lerp(camGoal, 0.05);
     lookAt.set(player.position.x, player.position.y + h * 0.5, player.position.z);
     camera.lookAt(lookAt);
@@ -448,6 +509,7 @@ function frame() {
   }
   for (const family of town.families) if (family.arrived) welcomeHome(family);
   updateFamilyCard(dt);
+  updateDoor();
 
   renderer.render(scene, camera);
 }
@@ -471,12 +533,17 @@ if (new URLSearchParams(location.search).has("debug")) {
     const [x, z] = (status.dataset.teleport || "").split(",").map(Number);
     if (player && Number.isFinite(x) && Number.isFinite(z)) player.position.set(x, 0, z);
   }).observe(status, { attributes: true, attributeFilter: ["data-teleport"] });
+  // data-hearts="Park" fills that family's hearts, to test adoption quickly.
+  new MutationObserver(() => {
+    const family = town.families.find((f) => f.name === status.dataset.hearts);
+    if (family) family.hearts = MAX_HEARTS;
+  }).observe(status, { attributes: true, attributeFilter: ["data-hearts"] });
   setInterval(() => {
     // Keep the game running even when the browser isn't drawing frames.
     if (performance.now() - lastFrame > 200) frame();
     const round = (n) => Math.round(n * 10) / 10;
     status.textContent = JSON.stringify({
-      player: player && { x: round(player.position.x), y: round(player.position.y), z: round(player.position.z), human: isHuman, carriedBy: carriedBy?.name ?? null },
+      player: player && { x: round(player.position.x), y: round(player.position.y), z: round(player.position.z), human: isHuman, carriedBy: carriedBy?.name ?? null, inside: insideHouse, door: doorLabel },
       families: town.families.map((f) => ({ name: f.name, state: f.state, hearts: f.hearts, x: round(f.leader.position.x), z: round(f.leader.position.z) })),
     });
   }, 100);

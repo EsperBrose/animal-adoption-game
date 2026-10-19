@@ -316,3 +316,10 @@ button, input { font: inherit; color: inherit; }
 }
 .banner-title { font-size: clamp(28px, 7vw, 40px); font-weight: bold; color: #e53935; }
 @keyframes pop { from { transform: scale(0.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+.door-button {
+  position: fixed;
+  right: 16px;
+  bottom: 92px;
+  font-size: 16px;
+}

@@ -154,7 +154,13 @@ function buildWorld(scene) {
   const trees = [];
 
   // Is a circle of this radius at (x, z) bumping into the fence, a tree or a house?
+  // Extra places outside the main land (like the inside of a house) that
+  // have their own walls. Each area has contains(x, z) and isBlocked(x, z, radius).
+  const areas = [];
+  const addArea = (area) => areas.push(area);
+
   function isBlocked(x, z, radius = 0.5) {
+    for (const area of areas) if (area.contains(x, z)) return area.isBlocked(x, z, radius);
     const limit = half - 0.5 - radius;
     if (Math.abs(x) > limit || Math.abs(z) > limit) return true;
     return colliders.some((c) =>
@@ -358,5 +364,5 @@ function buildWorld(scene) {
     house.group.add(heart);
   }
 
-  return { update, fadeTrees, markHome, isBlocked, colliders, houses, half };
+  return { update, fadeTrees, markHome, isBlocked, addArea, colliders, houses, half };
 }

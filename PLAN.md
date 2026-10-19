@@ -24,7 +24,7 @@ Hosted on GitHub Pages.
 - [x] Full meter → they adopt you, pick you up and carry you home (big animals walk) → "Adopted!" celebration, and your family follows you
 
 ## Phase 4 — Your new home and the store
-- [ ] Go inside your family's house (a boxy room)
+- [x] Go inside your family's house (a boxy room)
 - [ ] Coins: earn them by playing (making families happy, finding coins around the land)
 - [ ] Town store: buy furniture, toys, pet beds and hats
 - [ ] Decorate: place the things you bought in your house
