@@ -125,5 +125,23 @@ function createInterior(scene) {
     return object ? object.userData.placed : null;
   }
 
-  return { group, contains, isBlocked, entry, nearExit, placed, snap, placeItem, removeItem, makeGhost, itemAt };
+  // The closest placed item you could use from where you stand (or null).
+  function nearestItem(pos, reach, usable) {
+    let best = null;
+    let bestDist = Infinity;
+    for (const p of placed) {
+      if (!usable(p.id)) continue;
+      // Distance from you to the edge of the item.
+      const dx = Math.max(0, Math.abs(pos.x - ROOM.x - p.x) - p.hw);
+      const dz = Math.max(0, Math.abs(pos.z - ROOM.z - p.z) - p.hd);
+      const dist = Math.hypot(dx, dz);
+      if (dist < reach && dist < bestDist) {
+        best = p;
+        bestDist = dist;
+      }
+    }
+    return best;
+  }
+
+  return { group, contains, isBlocked, entry, nearExit, placed, snap, placeItem, removeItem, makeGhost, itemAt, nearestItem };
 }

@@ -241,6 +241,7 @@ function doAction(action) {
   const { line } = reactToAction(family, action, playerSpec);
   say(family, line);
   addCoins(action === family.loves ? 3 : 2); // families give you a little treat money
+  needs.fill("fun", 5); // playing with people is fun too
   effects.hearts(leaderPos, action === family.loves ? 12 : 5);
   ui.setHearts(family.hearts);
 }
@@ -347,8 +348,33 @@ function teleportHome(inside) {
 
 const SHOP_LABEL = "🛒 Shop";
 
+// ---------- eat, sleep and play at home ----------
+
+const needs = createNeeds();
+let homeActivity = null; // the furniture you're standing next to and can use
+let napping = 0; // seconds of sleep left (the screen goes dark)
+
+function useActivity(item) {
+  const activity = HOME_ACTIVITIES[item.id];
+  needs.fill(activity.need, activity.amount);
+  if (activity.need === "sleep" && activity.amount >= 100) {
+    napping = 2.5;
+    walkTarget = null;
+    ui.setNight(true);
+  } else if (item.id === "teddy") {
+    trickSpin = 0.6;
+    hop();
+  } else {
+    hop();
+  }
+  effects.hearts(player.position, 6);
+  ui.showToast(activity.line);
+}
+
 function useDoor() {
+  if (napping > 0) return;
   if (doorLabel === SHOP_LABEL) openShop();
+  else if (homeActivity) useActivity(homeActivity);
   else if (doorLabel) teleportHome(!insideHouse);
 }
 
@@ -357,11 +383,17 @@ function useDoor() {
 function updateDoor() {
   const family = town.adoptedFamily();
   let label = null;
+  homeActivity = null;
   const near = (x, z) =>
     Math.hypot(player.position.x - x, player.position.z - z) < 2.2 + (player.userData.radius ?? 0.5);
   if (player && !carriedBy && !ui.isPickerOpen()) {
     if (insideHouse) {
       if (interior.nearExit(player.position)) label = "🚪 Go outside";
+      else {
+        const reach = 0.9 + (player.userData.radius ?? 0.5);
+        homeActivity = interior.nearestItem(player.position, reach, (id) => Boolean(HOME_ACTIVITIES[id]));
+        if (homeActivity) label = HOME_ACTIVITIES[homeActivity.id].label;
+      }
     } else if (near(world.store.doorX, world.store.doorZ)) {
       label = SHOP_LABEL;
     } else if (family && family.state === "adopted" && near(family.house.doorX, family.house.doorZ)) {
@@ -544,6 +576,7 @@ function frame() {
 
   if (player) {
     if (carriedBy) followCarrier();
+    else if (napping > 0) walkAmount = 0; // asleep: no walking
     else updatePlayer(dt);
     if (trickSpin > 0) {
       // A full spin in 0.6 seconds.
@@ -573,6 +606,19 @@ function frame() {
   }
 
   town.update(dt, t, player);
+  // Needs only count down once you have a home to look after them in.
+  const hasHome = town.adoptedFamily()?.state === "adopted";
+  if (napping > 0) {
+    napping -= dt;
+    if (napping <= 0) {
+      ui.setNight(false);
+      ui.showToast("☀️ Good morning! You feel great!");
+    }
+  } else if (hasHome) {
+    needs.update(dt, (need) => ui.showToast(need.low));
+  }
+  ui.setNeeds(needs.values, hasHome);
+
   coinField.update(dt, t, insideHouse ? null : player, (value, position) => {
     addCoins(value);
     effects.sparkle(position);
@@ -616,6 +662,7 @@ function snapshot() {
     families: town.families.map((f) => ({ name: f.name, hearts: f.hearts, metFavorite: f.metFavorite })),
     adoptedBy: family && family.state === "adopted" ? family.name : null,
     furniture: interior.placed.map(({ id, x, z, turns }) => ({ id, x, z, turns })),
+    needs: { ...needs.values },
   };
 }
 
@@ -649,6 +696,7 @@ function restoreGame(save) {
   Object.assign(inventory, save.inventory);
   (save.hats ?? []).forEach((id) => hatsOwned.add(id));
   wearing = save.wearing ?? null;
+  Object.assign(needs.values, save.needs ?? {});
   for (const saved of save.families ?? []) {
     const family = town.families.find((f) => f.name === saved.name);
     if (family) Object.assign(family, { hearts: saved.hearts, metFavorite: saved.metFavorite });
@@ -711,6 +759,10 @@ if (new URLSearchParams(location.search).has("debug")) {
     const family = town.families.find((f) => f.name === status.dataset.hearts);
     if (family) family.hearts = MAX_HEARTS;
   }).observe(status, { attributes: true, attributeFilter: ["data-hearts"] });
+  // data-needs="15" sets food, sleep and fun to that amount, to test eating and sleeping.
+  new MutationObserver(() => {
+    for (const key of Object.keys(needs.values)) needs.values[key] = Number(status.dataset.needs) || 0;
+  }).observe(status, { attributes: true, attributeFilter: ["data-needs"] });
   // data-coins="100" gives you coins, to test the store.
   new MutationObserver(() => addCoins(Number(status.dataset.coins) || 0)).observe(status, { attributes: true, attributeFilter: ["data-coins"] });
   setInterval(() => {
@@ -718,7 +770,8 @@ if (new URLSearchParams(location.search).has("debug")) {
     if (performance.now() - lastFrame > 200) frame();
     const round = (n) => Math.round(n * 10) / 10;
     status.textContent = JSON.stringify({
-      player: player && { x: round(player.position.x), y: round(player.position.y), z: round(player.position.z), human: isHuman, carriedBy: carriedBy?.name ?? null, inside: insideHouse, door: doorLabel },
+      player: player && { x: round(player.position.x), y: round(player.position.y), z: round(player.position.z), human: isHuman, carriedBy: carriedBy?.name ?? null, inside: insideHouse, door: doorLabel, napping: napping > 0 },
+      needs: Object.fromEntries(Object.entries(needs.values).map(([k, v]) => [k, Math.round(v)])),
       families: town.families.map((f) => ({ name: f.name, state: f.state, hearts: f.hearts, x: round(f.leader.position.x), z: round(f.leader.position.z) })),
     });
   }, 100);
