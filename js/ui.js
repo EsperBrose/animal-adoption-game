@@ -419,6 +419,27 @@ function createUI({
     hint.hidden = false;
   }
 
+  // ---------- needs and sleeping ----------
+
+  const needsBox = document.getElementById("needs");
+  needsBox.innerHTML = NEEDS.map(
+    (need) => `<div class="need" title="${need.label}">${need.emoji}<div class="need-bar"><div class="need-fill" data-need="${need.key}"></div></div></div>`
+  ).join("");
+  const needFills = [...needsBox.querySelectorAll(".need-fill")];
+
+  function setNeeds(values, visible) {
+    needsBox.hidden = !visible;
+    if (!visible) return;
+    for (const fill of needFills) {
+      const value = values[fill.dataset.need];
+      fill.style.width = `${value}%`;
+      fill.classList.toggle("low", value < 25);
+    }
+  }
+
+  const night = document.getElementById("night");
+  const setNight = (on) => night.classList.toggle("on", on);
+
   const isPickerOpen = () => !picker.hidden || !humanPanel.hidden || !storePanel.hidden;
 
   return {
@@ -428,5 +449,6 @@ function createUI({
     showAdoptCard, showTakenCard, setPlayLocked, showBanner,
     setDoorButton, setCoins, openStore, renderStore, closeStore,
     setDecorateButton, showDecorTray, hideDecorTray,
+    setNeeds, setNight,
   };
 }

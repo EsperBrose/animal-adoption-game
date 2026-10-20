@@ -28,7 +28,7 @@ Hosted on GitHub Pages.
 - [x] Coins: earn them by playing (making families happy, finding coins around the land)
 - [x] Town store: buy furniture, toys, pet beds and hats
 - [x] Decorate: place the things you bought in your house
-- [ ] Eat, sleep and play at home
+- [x] Eat, sleep and play at home (food, sleep and fun meters; food bowl, beds, sofa, teddy and TV)
 - [x] Save progress in the browser (coins, purchases, hats, adoption, furniture; "Start a new game" to reset)
 
 ## Phase 5 — Adoption center (play with friends)
