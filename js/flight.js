@@ -23,12 +23,13 @@ function createFlight({ scene, camera, airport, island, ui }) {
     for (let p = 0; p < 3; p++) {
       const puff = new THREE.Mesh(
         new THREE.BoxGeometry(3 + Math.random() * 3, 1.5 + Math.random(), 2.5 + Math.random() * 2),
-        new THREE.MeshLambertMaterial({ color: 0xffffff })
+        new THREE.MeshLambertMaterial({ color: 0xffffff, emissive: 0x9e9e9e }) // glowing white
       );
       puff.position.set(p * 2 - 2, Math.random() * 0.8, Math.random() - 0.5);
       cloud.add(puff);
     }
-    cloud.position.set(100 + Math.random() * 200, SKY_HEIGHT - 8 + Math.random() * 16, (Math.random() - 0.5) * 60);
+    // Clouds stay on the far side of the plane's path, so they never block the camera.
+    cloud.position.set(100 + Math.random() * 200, SKY_HEIGHT - 10 + Math.random() * 18, -8 - Math.random() * 45);
     scene.add(cloud);
   }
 
@@ -62,6 +63,9 @@ function createFlight({ scene, camera, airport, island, ui }) {
     const t = trip.time;
     const from = homes[trip.from].parked;
     const to = homes[trip.to].parked;
+    // Keep the camera on the open side of each runway: east at home (the
+    // terminal is west), west on the island (palm trees are east).
+    const side = (place) => (place === "main" ? 7 : -7);
 
     if (t < TAKEOFF_TIME) {
       // Speed up down the runway (toward -z), then lift off.
@@ -70,7 +74,7 @@ function createFlight({ scene, camera, airport, island, ui }) {
       const climb = Math.max(0, t - 2.5);
       plane.position.set(from.x, climb * climb * 2, from.z - distance);
       body.rotation.x = climb > 0 ? -0.15 : 0;
-      follow(7, 4, 12);
+      follow(side(trip.from), 4, 12);
       if (t > TAKEOFF_TIME - 0.35) flashAt("takeoff");
     } else if (t < TAKEOFF_TIME + CRUISE_TIME) {
       // Cruise across the sea, high above the waves.
@@ -91,7 +95,7 @@ function createFlight({ scene, camera, airport, island, ui }) {
       const descent = Math.max(0, 1 - l / 2.5);
       plane.position.set(to.x, 6 * descent, to.z - 30 + rolled);
       body.rotation.x = descent > 0 ? 0.08 : 0;
-      follow(7, 4, -12);
+      follow(side(trip.to), 4, -12);
     } else {
       // Arrived! Park facing north again, ready for the next trip.
       plane.position.copy(to);

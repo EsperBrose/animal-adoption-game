@@ -603,12 +603,15 @@ function frame() {
   effects.update(dt);
 
   if (player && flight.isFlying()) {
-    // On the plane: the flight moves the plane and the camera.
-    flight.update(dt);
-    const p = flight.planePosition();
-    player.position.set(p.x, 0, p.z); // you ride along (hidden inside)
-    sun.position.set(p.x + 15, p.y + 25, p.z + 10);
-    sun.target.position.set(p.x, 0, p.z);
+    // On the plane: the flight moves the plane and the camera. (When the
+    // trip ends, update() has already put you next to the plane.)
+    if (flight.update(dt)) {
+      const p = flight.planePosition();
+      player.position.set(p.x, 0, p.z); // you ride along (hidden inside)
+      sun.position.set(p.x + 15, p.y + 25, p.z + 10);
+      sun.target.position.set(p.x, 0, p.z);
+      world.fadeTrees(p, camera.position);
+    }
   } else if (player) {
     if (carriedBy) followCarrier();
     else if (napping > 0) walkAmount = 0; // asleep: no walking
@@ -662,7 +665,7 @@ function frame() {
   // Only bother with the island while you're over there.
   if (player && player.position.x > ISLAND.x - 100) {
     island.update(dt, t, player);
-    islandCoins.update(dt, t, player, collectCoin);
+    islandCoins.update(dt, t, flight.isFlying() ? null : player, collectCoin);
   }
   for (const family of town.families) {
     const leader = family.leader;
