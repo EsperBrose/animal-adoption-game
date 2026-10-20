@@ -145,7 +145,10 @@ for (const family of town.families) {
 // ---------- coins ----------
 
 const airport = createAirport(scene, world);
+const island = createIsland(scene);
+world.addArea(island);
 const coinField = createCoins(scene, world);
+const islandCoins = createCoins(scene, world, { x: ISLAND.x, z: ISLAND.z, r: ISLAND.r - 3, count: 20 });
 let coins = 0;
 
 function addCoins(amount) {
@@ -431,6 +434,7 @@ function welcomeHome(family) {
 function resize() {
   const w = window.innerWidth;
   const h = window.innerHeight;
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2)); // in case the page was zoomed
   renderer.setSize(w, h, false);
   camera.aspect = w / h;
   camera.updateProjectionMatrix();
@@ -620,10 +624,16 @@ function frame() {
   }
   ui.setNeeds(needs.values, hasHome);
 
-  coinField.update(dt, t, insideHouse ? null : player, (value, position) => {
+  const collectCoin = (value, position) => {
     addCoins(value);
     effects.sparkle(position);
-  });
+  };
+  coinField.update(dt, t, insideHouse ? null : player, collectCoin);
+  // Only bother with the island while you're over there.
+  if (player && player.position.x > ISLAND.x - 100) {
+    island.update(dt, t, player);
+    islandCoins.update(dt, t, player, collectCoin);
+  }
   for (const family of town.families) {
     const leader = family.leader;
     const near = player && !ui.isPickerOpen() &&

@@ -5,17 +5,27 @@ const COIN_VALUE = 5;
 const COIN_COUNT = 45;
 const COIN_RESPAWN = 40; // seconds
 
-function createCoins(scene, world) {
+// With a region { x, z, r, count }, coins appear inside that circle instead
+// of all over the main land (used for Sunny Island).
+function createCoins(scene, world, region = null) {
   const geometry = new THREE.BoxGeometry(0.5, 0.5, 0.12);
   const material = new THREE.MeshLambertMaterial({ color: 0xffd54f, emissive: 0x6d4c00 });
   const coins = [];
 
+  function randomSpot() {
+    if (region) {
+      const a = Math.random() * Math.PI * 2;
+      const d = Math.random() * region.r;
+      return [region.x + Math.cos(a) * d, region.z + Math.sin(a) * d];
+    }
+    const edge = world.half - 3;
+    return [(Math.random() - 0.5) * 2 * edge, (Math.random() - 0.5) * 2 * edge];
+  }
+
   // Put a coin somewhere you can reach: not in the pond, a tree or a house.
   function spawn(coin) {
-    const edge = world.half - 3;
     for (let tries = 0; tries < 50; tries++) {
-      const x = (Math.random() - 0.5) * 2 * edge;
-      const z = (Math.random() - 0.5) * 2 * edge;
+      const [x, z] = randomSpot();
       if (inPond(x, z, 1) || world.isBlocked(x, z, 0.8)) continue;
       coin.position.set(x, 0.6, z);
       coin.visible = true;
@@ -23,7 +33,7 @@ function createCoins(scene, world) {
     }
   }
 
-  for (let i = 0; i < COIN_COUNT; i++) {
+  for (let i = 0; i < (region?.count ?? COIN_COUNT); i++) {
     const coin = new THREE.Mesh(geometry, material);
     coin.castShadow = true;
     coin.userData = { phase: i, respawnAt: 0 };
