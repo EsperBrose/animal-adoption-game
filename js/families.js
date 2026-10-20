@@ -157,7 +157,7 @@ function createFamilies(scene, world) {
       if (family.state === "meet") {
         // Stand still and look at the animal.
       } else if (family.state === "adopted") {
-        if (toPlayer > 2.8) {
+        if (toPlayer > 2.8 && toPlayer < 60) { // too far (like on another island)? wait for you
           const away = (2.5 / toPlayer);
           const gx = player.position.x - (player.position.x - leader.position.x) * away;
           const gz = player.position.z - (player.position.z - leader.position.z) * away;

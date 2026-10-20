@@ -408,3 +408,14 @@ button, input { font: inherit; color: inherit; }
   z-index: 20;
 }
 .night.on { opacity: 1; }
+
+.fade {
+  position: fixed;
+  inset: 0;
+  background: #fff;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.3s;
+  z-index: 20;
+}
+.fade.on { opacity: 1; }

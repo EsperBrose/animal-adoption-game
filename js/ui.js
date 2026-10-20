@@ -439,6 +439,8 @@ function createUI({
 
   const night = document.getElementById("night");
   const setNight = (on) => night.classList.toggle("on", on);
+  const fade = document.getElementById("fade");
+  const setFade = (on) => fade.classList.toggle("on", on);
 
   const isPickerOpen = () => !picker.hidden || !humanPanel.hidden || !storePanel.hidden;
 
@@ -449,6 +451,6 @@ function createUI({
     showAdoptCard, showTakenCard, setPlayLocked, showBanner,
     setDoorButton, setCoins, openStore, renderStore, closeStore,
     setDecorateButton, showDecorTray, hideDecorTray,
-    setNeeds, setNight,
+    setNeeds, setNight, setFade,
   };
 }
