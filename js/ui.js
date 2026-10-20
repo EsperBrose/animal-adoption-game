@@ -21,7 +21,7 @@ const hexToCss = (hex) => "#" + hex.toString(16).padStart(6, "0");
 function createUI({
   onChoose, onColor, onAge, onDone, onHop,
   onToggleForm, onEditHuman, onHumanChange, onHumanDone, onHumanCancel,
-  onAction, onDoor, onDecorate,
+  onAction, onDoor, onDecorate, onNewGame,
 }) {
   const picker = document.getElementById("picker");
   const stepAnimal = document.getElementById("step-animal");
@@ -73,9 +73,15 @@ function createUI({
     playControls.hidden = true;
     formToggle.hidden = true;
     editHuman.hidden = true;
+    newGameButton.hidden = !played; // only once there's a game to start over
   }
 
+  let played = false;
+  const newGameButton = document.getElementById("new-game");
+  newGameButton.addEventListener("click", () => onNewGame());
+
   function hidePicker() {
+    played = true;
     picker.hidden = true;
     changeButton.hidden = false;
     playControls.hidden = false;

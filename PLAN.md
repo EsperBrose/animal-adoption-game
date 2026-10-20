@@ -29,7 +29,7 @@ Hosted on GitHub Pages.
 - [x] Town store: buy furniture, toys, pet beds and hats
 - [x] Decorate: place the things you bought in your house
 - [ ] Eat, sleep and play at home
-- [ ] Save progress in the browser
+- [x] Save progress in the browser (coins, purchases, hats, adoption, furniture; "Start a new game" to reset)
 
 ## Phase 5 — Adoption center (play with friends)
 - [ ] Set up Firebase, a free online service that connects players (you create the project; Claude guides you)

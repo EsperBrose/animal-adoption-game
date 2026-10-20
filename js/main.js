@@ -132,6 +132,7 @@ const ui = createUI({
   onAction: doAction,
   onDoor: () => useDoor(),
   onDecorate: () => decorator.start(),
+  onNewGame: () => startOver(),
 });
 
 const town = createFamilies(scene, world);
@@ -593,6 +594,97 @@ function frame() {
   updateDoor();
 
   renderer.render(scene, camera);
+}
+
+// ---------- saving ----------
+
+let startingOver = false; // set while a new game is loading, so we don't save over it
+
+// Everything worth keeping, as plain data.
+function snapshot() {
+  const family = town.adoptedFamily();
+  return {
+    version: 1,
+    name: playerName,
+    spec: playerSpec,
+    humanLook,
+    isHuman,
+    coins,
+    inventory,
+    hats: [...hatsOwned],
+    wearing,
+    families: town.families.map((f) => ({ name: f.name, hearts: f.hearts, metFavorite: f.metFavorite })),
+    adoptedBy: family && family.state === "adopted" ? family.name : null,
+    furniture: interior.placed.map(({ id, x, z, turns }) => ({ id, x, z, turns })),
+  };
+}
+
+let lastSaved = "";
+function autosave() {
+  // Only once you've made your animal, and not halfway through being carried home.
+  if (startingOver || !player || !playerName || carriedBy) return;
+  const text = JSON.stringify(snapshot());
+  if (text === lastSaved) return;
+  lastSaved = text;
+  writeSave(JSON.parse(text));
+}
+setInterval(autosave, 2000);
+window.addEventListener("pagehide", autosave);
+
+function startOver() {
+  if (!window.confirm("Start a brand new game? Your animal, coins, family and furniture will be gone.")) return;
+  startingOver = true;
+  clearSave();
+  window.location.reload();
+}
+
+// Put everything back the way it was.
+function restoreGame(save) {
+  playerName = save.name;
+  playerSpec = save.spec;
+  humanLook = save.humanLook;
+  isHuman = Boolean(save.isHuman && humanLook);
+  coins = save.coins ?? 0;
+  ui.setCoins(coins);
+  Object.assign(inventory, save.inventory);
+  (save.hats ?? []).forEach((id) => hatsOwned.add(id));
+  wearing = save.wearing ?? null;
+  for (const saved of save.families ?? []) {
+    const family = town.families.find((f) => f.name === saved.name);
+    if (family) Object.assign(family, { hearts: saved.hearts, metFavorite: saved.metFavorite });
+  }
+  for (const item of save.furniture ?? []) interior.placeItem(item.id, item.x, item.z, item.turns);
+
+  if (isHuman) placeHuman(humanLook);
+  else placeAnimal(playerSpec);
+
+  // If you have a family, start at your front door with them.
+  const family = town.families.find((f) => f.name === save.adoptedBy);
+  if (family) {
+    family.state = "adopted";
+    world.markHome(family.house);
+    family.label.textContent = `❤️ Your family: the ${family.name}s`;
+    player.position.set(family.house.doorX, 0, family.house.doorZ + 1.2);
+    moveFamilyTo(family, family.house.doorX + 1.8, family.house.doorZ + 0.8);
+  }
+
+  ui.setNameTag(playerName);
+  ui.hidePicker();
+  ui.setForm(isHuman);
+  setCameraGoal();
+  camera.position.copy(camGoal);
+  lastSaved = JSON.stringify(snapshot());
+  ui.showToast(`Welcome back, ${playerName}! 💖`);
+}
+
+const saved = loadSave();
+if (saved && saved.version === 1 && saved.spec && saved.name) {
+  try {
+    restoreGame(saved);
+  } catch (error) {
+    // A broken save shouldn't stop the game: start fresh instead.
+    console.warn("Could not load saved game", error);
+  }
 }
 
 function loop() {
