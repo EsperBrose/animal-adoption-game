@@ -39,6 +39,6 @@ Hosted on GitHub Pages.
 - [ ] Adopted friends join your family and come home with you
 
 ## Phase 6 — Islands
-- [ ] An airport with a boxy airplane you can board
+- [x] An airport with a boxy airplane, plus the sea all around the land
 - [ ] Fly to another island (a short flight across the sea)
 - [ ] A new island to explore, with its own animals and places, and a flight back home

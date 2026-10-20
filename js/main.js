@@ -144,6 +144,7 @@ for (const family of town.families) {
 
 // ---------- coins ----------
 
+const airport = createAirport(scene, world);
 const coinField = createCoins(scene, world);
 let coins = 0;
 
