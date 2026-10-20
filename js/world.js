@@ -12,6 +12,13 @@ const TOWN = {
   edgeZ: -11, // everything north of this is town (no trees)
 };
 
+// The airport is on the east side: a runway running north–south, with the
+// terminal next to it. No trees grow there.
+const AIRPORT = { runwayX: 39, halfWidth: 3, zMin: -12, zMax: 21 };
+const inAirport = (x, z) => x > 26 && z > -14 && z < 24;
+const isRunway = (x, z) =>
+  Math.abs(x - AIRPORT.runwayX) < AIRPORT.halfWidth && z > AIRPORT.zMin && z < AIRPORT.zMax;
+
 function isPath(x, z) {
   if (Math.abs(z - TOWN.roadZ) < 1.5 && Math.abs(x) < 34) return true; // main road
   if (Math.abs(x - TOWN.storeX) < 0.9 && z < TOWN.roadZ && z > TOWN.houseZ + 2) return true; // store path
@@ -244,6 +251,12 @@ function buildWorld(scene) {
         hex = 0xf2d98d; // sandy shore
       } else if (isPath(x, z)) {
         hex = rand() < 0.5 ? 0xd7ccc8 : 0xcfc2bd;
+      } else if (isRunway(x, z)) {
+        // Dark runway with a dashed white line down the middle.
+        const centerLine = Math.abs(x - AIRPORT.runwayX) < 0.6 && Math.floor(z) % 3 === 0;
+        hex = centerLine ? 0xffffff : 0x616161;
+      } else if (inAirport(x, z) && Math.abs(x - AIRPORT.runwayX) < 6) {
+        hex = 0x9e9e9e; // concrete around the runway
       } else if (isTrail(x, z)) {
         hex = rand() < 0.5 ? 0xa1887f : 0x8d6e63; // dirt trail into the forest
       } else if (isForest(x, z)) {
@@ -258,6 +271,13 @@ function buildWorld(scene) {
     }
   }
   scene.add(ground);
+
+  // The sea all around, so the land is an island.
+  const ocean = new THREE.Mesh(new THREE.PlaneGeometry(4000, 4000), new THREE.MeshLambertMaterial({ color: 0x29b6f6 }));
+  ocean.rotation.x = -Math.PI / 2;
+  ocean.position.y = -0.9;
+  ocean.receiveShadow = true;
+  scene.add(ocean);
 
   // Houses along the north side of the road.
   const houseColors = [[0xffe0b2, 0xe57373], [0xb3e5fc, 0x5c6bc0], [0xfff9c4, 0x66bb6a], [0xf8bbd0, 0x8d6e63]];
@@ -298,7 +318,7 @@ function buildWorld(scene) {
     const x = (rand() - 0.5) * 2 * edge;
     const z = FOREST_Z - 6 + rand() * (edge - FOREST_Z + 6);
     const size = 0.4 + rand() * 1.4;
-    if (isTrail(x, z) || isBlocked(x, z, size)) continue;
+    if (isTrail(x, z) || inAirport(x, z) || isBlocked(x, z, size)) continue;
     scene.add(makeRock(x, z, size, rand));
     if (size > 0.9) colliders.push({ x, z, r: size * 0.5 });
   }
@@ -318,7 +338,7 @@ function buildWorld(scene) {
     const x = Math.round((rand() - 0.5) * (WORLD_SIZE - 4));
     const z = Math.round((rand() - 0.5) * (WORLD_SIZE - 4));
     if (inPond(x, z, 4)) continue;
-    if (z < TOWN.edgeZ || isPath(x, z) || isForest(x, z) || isTrail(x, z)) continue;
+    if (z < TOWN.edgeZ || isPath(x, z) || isForest(x, z) || isTrail(x, z) || inAirport(x, z)) continue;
     if (Math.abs(x) < 5 && z > 0 && z < POND.rz + 14) continue; // keep the start area clear
 
     if (colliders.some((c) => c.r && Math.hypot(c.x - x, c.z - z) < 3)) continue;
@@ -333,7 +353,7 @@ function buildWorld(scene) {
   for (let f = 0; f < 380; f++) {
     const x = (rand() - 0.5) * (WORLD_SIZE - 3);
     const z = (rand() - 0.5) * (WORLD_SIZE - 3);
-    if (inPond(x, z, 2) || isPath(x, z) || isForest(x, z) || isTrail(x, z) || isBlocked(x, z, 0.3)) continue;
+    if (inPond(x, z, 2) || isPath(x, z) || isForest(x, z) || isTrail(x, z) || inAirport(x, z) || isBlocked(x, z, 0.3)) continue;
     scene.add(makeFlower(x, z, rand));
   }
 
