@@ -41,4 +41,4 @@ Hosted on GitHub Pages.
 ## Phase 6 — Islands
 - [x] An airport with a boxy airplane, plus the sea all around the land
 - [ ] Fly to another island (a short flight across the sea)
-- [ ] A new island to explore, with its own animals and places, and a flight back home
+- [x] Sunny Island to explore: beach, palm trees, smoothie hut, runway, coins and wild monkeys, parrots, turtles, frogs and an elephant
