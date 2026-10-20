@@ -442,5 +442,8 @@ function buildWorld(scene) {
     house.group.add(heart);
   }
 
-  return { update, fadeTrees, markHome, isBlocked, addArea, colliders, houses, store, half };
+  // Things built elsewhere (like island palms) can fade out of the way too.
+  const addFadeable = (group) => trees.push(group);
+
+  return { update, fadeTrees, addFadeable, markHome, isBlocked, addArea, colliders, houses, store, half };
 }

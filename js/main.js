@@ -145,7 +145,7 @@ for (const family of town.families) {
 // ---------- coins ----------
 
 const airport = createAirport(scene, world);
-const island = createIsland(scene);
+const island = createIsland(scene, world);
 world.addArea(island);
 const coinField = createCoins(scene, world);
 const islandCoins = createCoins(scene, world, { x: ISLAND.x, z: ISLAND.z, r: ISLAND.r - 3, count: 20 });
@@ -352,6 +352,26 @@ function teleportHome(inside) {
 
 const SHOP_LABEL = "🛒 Shop";
 
+// ---------- flying ----------
+
+const flight = createFlight({ scene, camera, airport, island, ui });
+const FLY_LABELS = { main: "✈️ Fly to Sunny Island", island: "✈️ Fly home" };
+
+function takeFlight() {
+  walkTarget = null;
+  player.visible = false;
+  ui.nameTag.hidden = true;
+  flight.start((arrivedAt, spot) => {
+    player.visible = true;
+    ui.nameTag.hidden = false;
+    player.position.copy(spot);
+    player.rotation.y = -Math.PI / 2; // step away from the plane
+    setCameraGoal();
+    camera.position.copy(camGoal);
+    ui.showToast(arrivedAt === "island" ? "🏝️ Welcome to Sunny Island!" : "🏠 Welcome home!");
+  });
+}
+
 // ---------- eat, sleep and play at home ----------
 
 const needs = createNeeds();
@@ -378,6 +398,7 @@ function useActivity(item) {
 function useDoor() {
   if (napping > 0) return;
   if (doorLabel === SHOP_LABEL) openShop();
+  else if (Object.values(FLY_LABELS).includes(doorLabel)) takeFlight();
   else if (homeActivity) useActivity(homeActivity);
   else if (doorLabel) teleportHome(!insideHouse);
 }
@@ -390,7 +411,7 @@ function updateDoor() {
   homeActivity = null;
   const near = (x, z) =>
     Math.hypot(player.position.x - x, player.position.z - z) < 2.2 + (player.userData.radius ?? 0.5);
-  if (player && !carriedBy && !ui.isPickerOpen()) {
+  if (player && !carriedBy && !ui.isPickerOpen() && !flight.isFlying()) {
     if (insideHouse) {
       if (interior.nearExit(player.position)) label = "🚪 Go outside";
       else {
@@ -400,6 +421,8 @@ function updateDoor() {
       }
     } else if (near(world.store.doorX, world.store.doorZ)) {
       label = SHOP_LABEL;
+    } else if (!flight.isFlying() && near(flight.boardSpot().x, flight.boardSpot().z)) {
+      label = FLY_LABELS[flight.where()];
     } else if (family && family.state === "adopted" && near(family.house.doorX, family.house.doorZ)) {
       label = "🚪 Go inside";
     }
@@ -579,7 +602,14 @@ function frame() {
   world.update(t);
   effects.update(dt);
 
-  if (player) {
+  if (player && flight.isFlying()) {
+    // On the plane: the flight moves the plane and the camera.
+    flight.update(dt);
+    const p = flight.planePosition();
+    player.position.set(p.x, 0, p.z); // you ride along (hidden inside)
+    sun.position.set(p.x + 15, p.y + 25, p.z + 10);
+    sun.target.position.set(p.x, 0, p.z);
+  } else if (player) {
     if (carriedBy) followCarrier();
     else if (napping > 0) walkAmount = 0; // asleep: no walking
     else updatePlayer(dt);
@@ -628,7 +658,7 @@ function frame() {
     addCoins(value);
     effects.sparkle(position);
   };
-  coinField.update(dt, t, insideHouse ? null : player, collectCoin);
+  coinField.update(dt, t, insideHouse || flight.isFlying() ? null : player, collectCoin);
   // Only bother with the island while you're over there.
   if (player && player.position.x > ISLAND.x - 100) {
     island.update(dt, t, player);
@@ -781,7 +811,7 @@ if (new URLSearchParams(location.search).has("debug")) {
     if (performance.now() - lastFrame > 200) frame();
     const round = (n) => Math.round(n * 10) / 10;
     status.textContent = JSON.stringify({
-      player: player && { x: round(player.position.x), y: round(player.position.y), z: round(player.position.z), human: isHuman, carriedBy: carriedBy?.name ?? null, inside: insideHouse, door: doorLabel, napping: napping > 0 },
+      player: player && { x: round(player.position.x), y: round(player.position.y), z: round(player.position.z), human: isHuman, carriedBy: carriedBy?.name ?? null, inside: insideHouse, door: doorLabel, napping: napping > 0, flying: flight.isFlying(), plane: flight.where() },
       needs: Object.fromEntries(Object.entries(needs.values).map(([k, v]) => [k, Math.round(v)])),
       families: town.families.map((f) => ({ name: f.name, state: f.state, hearts: f.hearts, x: round(f.leader.position.x), z: round(f.leader.position.z) })),
     });

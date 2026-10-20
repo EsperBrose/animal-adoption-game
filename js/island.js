@@ -55,7 +55,7 @@ function makeHut(x, z) {
   return hut;
 }
 
-function createIsland(scene) {
+function createIsland(scene, world) {
   const rand = seededRandom(2026);
   const group = new THREE.Group();
   scene.add(group);
@@ -105,7 +105,9 @@ function createIsland(scene) {
     if (onRunway(x, z) || Math.hypot(x - hutSpot.x, z - hutSpot.z) < 4) continue;
     if (Math.hypot(x - ISLAND.x, z - ISLAND.z) < 4) continue; // a clearing in the middle
     if (colliders.some((c) => c.r && Math.hypot(c.x - x, c.z - z) < 2.6)) continue;
-    group.add(makePalm(x, z, rand));
+    const palm = makePalm(x, z, rand);
+    group.add(palm);
+    world.addFadeable(palm);
     colliders.push({ x, z, r: 0.6 });
     palms++;
   }
